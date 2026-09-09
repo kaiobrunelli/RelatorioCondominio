@@ -16,7 +16,6 @@
     label="Saldo de caixa acumulado"
     [value]="saldoAcumulado() | brl"
     [tone]="saldoAcumulado() >= 0 ? 'green' : 'red'"
-    hint="Histórico completo"
   >
     <svg lucideLandmark class="h-5 w-5" [class]="saldoAcumulado() >= 0 ? 'text-accent-green' : 'text-accent-red'"></svg>
   </app-kpi-card>
