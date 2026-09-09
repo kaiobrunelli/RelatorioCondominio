@@ -1,9 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { LucideLandmark, LucidePlus, LucideTrash2, LucideWallet } from '@lucide/angular';
+import { LucideDroplets, LucideLandmark, LucidePencil, LucidePlus, LucideTrash2, LucideWallet } from '@lucide/angular';
 import { Movimentacao, TipoMovimentacao, Unidade } from '../../core/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CaixaService } from '../../core/services/caixa.service';
+import { CategoriasService } from '../../core/services/categorias.service';
+import { DespesasService } from '../../core/services/despesas.service';
 import { MonthService } from '../../core/services/month.service';
 import { MovimentacoesService } from '../../core/services/movimentacoes.service';
 import { NovoPagamento, PagamentosService } from '../../core/services/pagamentos.service';
@@ -62,7 +64,9 @@ function hojeIso(): string {
     Modal,
     MonthSwitcher,
     PageHeader,
+    LucideDroplets,
     LucideLandmark,
+    LucidePencil,
     LucidePlus,
     LucideTrash2,
     LucideWallet,
@@ -72,6 +76,8 @@ function hojeIso(): string {
 export class CaixaPage {
   private readonly rateioService = inject(RateioService);
   private readonly caixaService = inject(CaixaService);
+  private readonly categoriasService = inject(CategoriasService);
+  private readonly despesasService = inject(DespesasService);
   protected readonly somenteLeitura = inject(AuthService).somenteLeitura;
   protected readonly unidadesService = inject(UnidadesService);
   protected readonly pagamentosService = inject(PagamentosService);
@@ -96,6 +102,19 @@ export class CaixaPage {
   };
 
   private readonly rateio = computed(() => this.rateioService.calcular(this.month.competencia()));
+
+  /** Categoria marcada como "rateio diferenciado de cobertura" — no app padrão, é a Água. */
+  protected readonly categoriaAgua = computed(() => this.categoriasService.all().find((c) => c.rateioDiferenciadoCobertura) ?? null);
+
+  /** Despesa de água já lançada para o mês selecionado, se houver. */
+  protected readonly despesaAguaDoMes = computed(() => {
+    const categoria = this.categoriaAgua();
+    if (!categoria) return null;
+    return this.despesasService.porCompetencia(this.month.competencia()).find((d) => d.categoriaId === categoria.id) ?? null;
+  });
+
+  protected readonly modalAguaAberto = signal(false);
+  protected valorAgua: number | null = null;
 
   protected readonly linhas = computed<LinhaPagamento[]>(() => {
     const pagamentos = this.pagamentosService.porCompetencia(this.month.competencia());
@@ -182,6 +201,39 @@ export class CaixaPage {
 
   removerMovimentacao(movimentacao: Movimentacao): void {
     this.movimentacoesService.remove(movimentacao.id);
+  }
+
+  abrirAgua(): void {
+    this.valorAgua = this.despesaAguaDoMes()?.valor ?? null;
+    this.modalAguaAberto.set(true);
+  }
+
+  fecharAgua(): void {
+    this.modalAguaAberto.set(false);
+  }
+
+  salvarAgua(): void {
+    const categoria = this.categoriaAgua();
+    if (!categoria || this.valorAgua === null || this.valorAgua < 0) return;
+
+    const existente = this.despesaAguaDoMes();
+    if (existente) {
+      this.despesasService.update(existente.id, { valor: this.valorAgua });
+    } else {
+      this.despesasService.criar({
+        categoriaId: categoria.id,
+        descricao: categoria.nome,
+        valor: this.valorAgua,
+        competencia: this.month.competencia(),
+        tipo: 'unica',
+        repeticoes: 1,
+        fornecedorNome: '',
+        fornecedorContato: '',
+        observacoes: '',
+        vencimento: null,
+      });
+    }
+    this.modalAguaAberto.set(false);
   }
 
   toneStatus(status: StatusLinha): BadgeTone {
