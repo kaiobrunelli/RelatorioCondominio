@@ -15,5 +15,7 @@ export interface Despesa {
   fornecedorNome: string;
   fornecedorContato: string;
   observacoes: string;
+  /** Indica se essa conta já foi paga ao fornecedor (controle interno, não afeta o rateio). */
+  pago: boolean;
   criadoEm: string;
 }

@@ -50,6 +50,7 @@ export class DespesasService extends EntityStore<Despesa> {
         grupoId: null,
         parcelaAtual: null,
         parcelaTotal: null,
+        pago: false,
         criadoEm: nowIso(),
       };
       this.add(despesa);
@@ -69,6 +70,7 @@ export class DespesasService extends EntityStore<Despesa> {
       grupoId,
       parcelaAtual: dados.tipo === 'parcelada' ? indice + 1 : null,
       parcelaTotal: dados.tipo === 'parcelada' ? repeticoes : null,
+      pago: false,
       criadoEm,
     }));
 
@@ -81,5 +83,9 @@ export class DespesasService extends EntityStore<Despesa> {
       .filter((d) => d.grupoId === grupoId)
       .map((d) => d.id);
     this.removeMany(ids);
+  }
+
+  marcarPago(id: string, pago: boolean): void {
+    this.update(id, { pago });
   }
 }

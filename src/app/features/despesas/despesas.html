@@ -80,6 +80,7 @@
           <th class="px-4 py-3">Tipo</th>
           <th class="px-4 py-3">Fornecedor</th>
           <th class="px-4 py-3 text-right">Valor</th>
+          <th class="px-4 py-3 text-center">Pago</th>
           <th class="px-4 py-3 text-right">Ações</th>
         </tr>
       </thead>
@@ -104,6 +105,15 @@
             </td>
             <td class="px-4 py-3 text-ink-soft">{{ despesa.fornecedorNome || '—' }}</td>
             <td class="px-4 py-3 text-right font-semibold text-ink">{{ despesa.valor | brl }}</td>
+            <td class="px-4 py-3 text-center">
+              <input
+                type="checkbox"
+                [checked]="despesa.pago"
+                (change)="alternarPago(despesa)"
+                class="h-4 w-4 rounded border-primary-200 text-primary-600"
+                title="Marcar como paga ao fornecedor"
+              />
+            </td>
             <td class="px-4 py-3">
               <div class="flex items-center justify-end gap-1">
                 <button

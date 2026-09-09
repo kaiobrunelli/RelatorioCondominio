@@ -237,4 +237,8 @@ export class DespesasPage {
     const mapa: Record<TipoDespesa, BadgeTone> = { unica: 'neutral', recorrente: 'primary', parcelada: 'amber' };
     return mapa[tipo];
   }
+
+  alternarPago(despesa: Despesa): void {
+    this.despesasService.marcarPago(despesa.id, !despesa.pago);
+  }
 }

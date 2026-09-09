@@ -56,6 +56,8 @@ create table public.despesas (
   fornecedor_nome text not null default '',
   fornecedor_contato text not null default '',
   observacoes text not null default '',
+  -- Controle interno de pagamento ao fornecedor (não afeta o cálculo do rateio).
+  pago boolean not null default false,
   criado_em timestamptz not null default now()
 );
 create index despesas_competencia_idx on public.despesas (competencia);
