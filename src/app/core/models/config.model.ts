@@ -3,7 +3,9 @@ export type TipoAcrescimo = 'percentual' | 'fixo';
 export interface ConfigCondominio {
   nomeCondominio: string;
   endereco: string;
-  /** Habilita o acréscimo diferenciado para unidades tipo "cobertura" em categorias marcadas. */
+  /** Valor fixo da taxa de condomínio, igual para todas as unidades (não entra em rateio). */
+  valorCondominio: number;
+  /** Habilita o acréscimo diferenciado para unidades tipo "cobertura" na água. */
   regraCoberturaAtiva: boolean;
   tipoAcrescimo: TipoAcrescimo;
   /** Se percentual: pontos percentuais acima da cota normal. Se fixo: valor em R$ acima da cota normal. */
@@ -18,6 +20,7 @@ export interface ConfigCondominio {
 export const CONFIG_PADRAO: ConfigCondominio = {
   nomeCondominio: 'Residencial Catalunha',
   endereco: '',
+  valorCondominio: 400,
   regraCoberturaAtiva: true,
   tipoAcrescimo: 'percentual',
   valorAcrescimo: 50,

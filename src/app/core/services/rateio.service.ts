@@ -1,31 +1,32 @@
 import { Injectable, inject } from '@angular/core';
-import { Categoria, Unidade } from '../models';
+import { Unidade } from '../models';
 import { CategoriasService } from './categorias.service';
 import { ConfigService } from './config.service';
 import { DespesasService } from './despesas.service';
 import { UnidadesService } from './unidades.service';
 
-export interface RateioPorCategoria {
-  categoriaId: string;
-  categoriaNome: string;
-  total: number;
-  diferenciado: boolean;
-}
-
 export interface RateioUnidade {
   unidade: Unidade;
-  valorPorCategoria: Map<string, number>;
+  /** Taxa fixa de condomínio (igual para todas as unidades). */
+  valorCondominio: number;
+  /** Cota da água desta unidade no mês (única parte que é rateada). */
+  valorAgua: number;
   total: number;
 }
 
 export interface RateioMes {
   competencia: string;
+  /** Total de todas as despesas lançadas no mês (inclui contas que o condomínio paga com o caixa, não rateadas). */
   totalDespesas: number;
-  categorias: RateioPorCategoria[];
+  /** Taxa fixa de condomínio por unidade, vinda de Configurações. */
+  valorCondominioUnidade: number;
+  /** Total da conta de água lançada no mês (soma das despesas da categoria marcada como "água"). */
+  totalAgua: number;
+  cotaAguaBase: number;
+  cotaAguaCobertura: number;
   unidades: RateioUnidade[];
-  totalRateado: number;
-  cotaBase: number;
-  cotaCobertura: number;
+  /** Soma do que deve ser cobrado de todas as unidades (condomínio fixo + água rateada). */
+  totalCobrado: number;
 }
 
 /** Arredonda para centavos distribuindo o resto de arredondamento na última posição, evitando perda de centavos. */
@@ -40,6 +41,12 @@ function distribuirComArredondamento(valores: number[], total: number): number[]
   return arredondados;
 }
 
+/**
+ * A cobrança de cada unidade é sempre: taxa fixa de condomínio (igual pra todo mundo, definida em
+ * Configurações) + a cota da água daquele mês (essa sim rateada, com acréscimo para coberturas). As
+ * demais despesas (luz, DARF, faxineira, elevador, fundo de reserva etc.) são pagas com o caixa do
+ * condomínio e só entram no controle de "pago/não pago" da tela Despesas — não são rateadas.
+ */
 @Injectable({ providedIn: 'root' })
 export class RateioService {
   private readonly despesas = inject(DespesasService);
@@ -51,99 +58,73 @@ export class RateioService {
     const cfg = this.config.config();
     const unidadesAtivas = this.unidades.ativas();
     const despesasMes = this.despesas.porCompetencia(competencia);
-    const categoriasMap = new Map<string, Categoria>(this.categorias.all().map((c) => [c.id, c]));
-
-    const totalPorCategoria = new Map<string, number>();
-    for (const despesa of despesasMes) {
-      totalPorCategoria.set(despesa.categoriaId, (totalPorCategoria.get(despesa.categoriaId) ?? 0) + despesa.valor);
-    }
-
-    const categoriasResumo: RateioPorCategoria[] = [...totalPorCategoria.entries()].map(([categoriaId, total]) => {
-      const categoria = categoriasMap.get(categoriaId);
-      return {
-        categoriaId,
-        categoriaNome: categoria?.nome ?? 'Sem categoria',
-        total,
-        diferenciado: !!categoria?.rateioDiferenciadoCobertura,
-      };
-    });
-
     const totalDespesas = despesasMes.reduce((s, d) => s + d.valor, 0);
 
-    const linhas = new Map<string, RateioUnidade>(
-      unidadesAtivas.map((u) => [u.id, { unidade: u, valorPorCategoria: new Map<string, number>(), total: 0 }]),
-    );
+    const categoriaAgua = this.categorias.all().find((c) => c.rateioDiferenciadoCobertura);
+    const totalAgua = categoriaAgua
+      ? despesasMes.filter((d) => d.categoriaId === categoriaAgua.id).reduce((s, d) => s + d.valor, 0)
+      : 0;
 
     const n = unidadesAtivas.length;
     const coberturas = unidadesAtivas.filter((u) => u.tipo === 'cobertura');
     const c = coberturas.length;
     const r = n - c;
 
-    let cotaBaseAgua = 0;
-    let cotaCoberturaAgua = 0;
+    let cotaAguaBase = 0;
+    let cotaAguaCobertura = 0;
+    let valoresAgua: number[] = unidadesAtivas.map(() => 0);
 
-    for (const resumo of categoriasResumo) {
-      if (n === 0) continue;
+    if (n > 0 && totalAgua > 0) {
+      const aplicaDiferenciado = cfg.regraCoberturaAtiva && c > 0 && r > 0;
 
-      const aplicaDiferenciado = resumo.diferenciado && cfg.regraCoberturaAtiva && c > 0 && r > 0;
-
-      if (!aplicaDiferenciado) {
-        const cota = resumo.total / n;
-        const valores = distribuirComArredondamento(
-          unidadesAtivas.map(() => cota),
-          resumo.total,
-        );
-        unidadesAtivas.forEach((u, i) => {
-          const linha = linhas.get(u.id)!;
-          linha.valorPorCategoria.set(resumo.categoriaId, valores[i]);
-        });
-        continue;
-      }
-
-      let cotaNormal: number;
-      let cotaCobertura: number;
-
-      if (cfg.tipoAcrescimo === 'fixo') {
-        const acrescimo = cfg.valorAcrescimo;
-        cotaNormal = (resumo.total - acrescimo * c) / n;
-        cotaCobertura = cotaNormal + acrescimo;
+      if (aplicaDiferenciado) {
+        if (cfg.tipoAcrescimo === 'fixo') {
+          const acrescimo = cfg.valorAcrescimo;
+          cotaAguaBase = (totalAgua - acrescimo * c) / n;
+          cotaAguaCobertura = cotaAguaBase + acrescimo;
+        } else {
+          const p = cfg.valorAcrescimo / 100;
+          cotaAguaBase = totalAgua / (r + c * (1 + p));
+          cotaAguaCobertura = cotaAguaBase * (1 + p);
+        }
+        if (cotaAguaBase < 0) {
+          cotaAguaBase = totalAgua / n;
+          cotaAguaCobertura = cotaAguaBase;
+        }
       } else {
-        const p = cfg.valorAcrescimo / 100;
-        cotaNormal = resumo.total / (r + c * (1 + p));
-        cotaCobertura = cotaNormal * (1 + p);
+        cotaAguaBase = totalAgua / n;
+        cotaAguaCobertura = cotaAguaBase;
       }
 
-      if (cotaNormal < 0) {
-        cotaNormal = resumo.total / n;
-        cotaCobertura = cotaNormal;
-      }
-
-      cotaBaseAgua = cotaNormal;
-      cotaCoberturaAgua = cotaCobertura;
-
-      const valoresBrutos = unidadesAtivas.map((u) => (u.tipo === 'cobertura' ? cotaCobertura : cotaNormal));
-      const valores = distribuirComArredondamento(valoresBrutos, resumo.total);
-      unidadesAtivas.forEach((u, i) => {
-        const linha = linhas.get(u.id)!;
-        linha.valorPorCategoria.set(resumo.categoriaId, valores[i]);
-      });
+      valoresAgua = distribuirComArredondamento(
+        unidadesAtivas.map((u) => (u.tipo === 'cobertura' ? cotaAguaCobertura : cotaAguaBase)),
+        totalAgua,
+      );
     }
 
-    for (const linha of linhas.values()) {
-      linha.total = [...linha.valorPorCategoria.values()].reduce((s, v) => s + v, 0);
-    }
+    const valorCondominioUnidade = cfg.valorCondominio;
 
-    const unidadesResultado = [...linhas.values()];
-    const totalRateado = unidadesResultado.reduce((s, l) => s + l.total, 0);
+    const unidadesResultado: RateioUnidade[] = unidadesAtivas.map((unidade, i) => {
+      const valorAgua = valoresAgua[i] ?? 0;
+      return {
+        unidade,
+        valorCondominio: valorCondominioUnidade,
+        valorAgua,
+        total: valorCondominioUnidade + valorAgua,
+      };
+    });
+
+    const totalCobrado = unidadesResultado.reduce((s, l) => s + l.total, 0);
 
     return {
       competencia,
       totalDespesas,
-      categorias: categoriasResumo,
+      valorCondominioUnidade,
+      totalAgua,
+      cotaAguaBase,
+      cotaAguaCobertura,
       unidades: unidadesResultado,
-      totalRateado,
-      cotaBase: cotaBaseAgua,
-      cotaCobertura: cotaCoberturaAgua,
+      totalCobrado,
     };
   }
 }

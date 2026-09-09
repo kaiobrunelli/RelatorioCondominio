@@ -8,6 +8,7 @@ import {
   LucideReceiptText,
   LucideWallet,
 } from '@lucide/angular';
+import { CategoriasService } from '../../core/services/categorias.service';
 import { DespesasService } from '../../core/services/despesas.service';
 import { MonthService } from '../../core/services/month.service';
 import { PagamentosService } from '../../core/services/pagamentos.service';
@@ -44,6 +45,7 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
 })
 export class Dashboard {
   private readonly despesasService = inject(DespesasService);
+  private readonly categoriasService = inject(CategoriasService);
   private readonly unidadesService = inject(UnidadesService);
   private readonly pagamentosService = inject(PagamentosService);
   protected readonly rateioService = inject(RateioService);
@@ -62,10 +64,22 @@ export class Dashboard {
   protected readonly unidadesAtivas = computed(() => this.unidadesService.ativas().length);
 
   protected readonly categoriasOrdenadas = computed(() => {
-    const total = this.rateio().totalDespesas;
-    return [...this.rateio().categorias]
-      .sort((a, b) => b.total - a.total)
-      .map((c) => ({ ...c, percentual: total > 0 ? (c.total / total) * 100 : 0 }));
+    const despesasMes = this.despesasService.porCompetencia(this.month.competencia());
+    const total = despesasMes.reduce((s, d) => s + d.valor, 0);
+
+    const totalPorCategoria = new Map<string, number>();
+    for (const despesa of despesasMes) {
+      totalPorCategoria.set(despesa.categoriaId, (totalPorCategoria.get(despesa.categoriaId) ?? 0) + despesa.valor);
+    }
+
+    return [...totalPorCategoria.entries()]
+      .map(([categoriaId, valor]) => ({
+        categoriaId,
+        categoriaNome: this.categoriasService.byId(categoriaId)?.nome ?? 'Sem categoria',
+        total: valor,
+        percentual: total > 0 ? (valor / total) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
   });
 
   protected readonly tendencia = computed(() => {

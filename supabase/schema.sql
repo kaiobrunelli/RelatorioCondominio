@@ -89,9 +89,11 @@ create table public.config (
   id smallint primary key default 1,
   nome_condominio text not null default 'Residencial Catalunha',
   endereco text not null default '',
-  -- Regra do rateio diferenciado: unidade padrão = 1 cota, cobertura = 1 cota + acréscimo.
-  -- Com tipo 'percentual' e valor 50, cobertura paga 1,5 cota (ex.: água dividida em partes,
-  -- onde cada padrão vale 1 parte e cada cobertura vale 1,5 parte).
+  -- Taxa fixa de condomínio, igual para toda unidade, todo mês (não é rateada).
+  valor_condominio numeric(12, 2) not null default 400,
+  -- Regra do rateio diferenciado DA ÁGUA (única categoria rateada): unidade padrão = 1 cota,
+  -- cobertura = 1 cota + acréscimo. Com tipo 'percentual' e valor 50, cobertura paga 1,5 cota
+  -- (ex.: água dividida em partes, onde cada padrão vale 1 parte e cada cobertura vale 1,5 parte).
   regra_cobertura_ativa boolean not null default true,
   tipo_acrescimo text not null default 'percentual' check (tipo_acrescimo in ('percentual', 'fixo')),
   valor_acrescimo numeric(12, 2) not null default 50,
@@ -118,8 +120,8 @@ create policy "somente_autenticados" on public.config for all to authenticated u
 
 -- 4. Dados iniciais ---------------------------------------------------------
 
-insert into public.config (id, nome_condominio, endereco, regra_cobertura_ativa, tipo_acrescimo, valor_acrescimo)
-values (1, 'Residencial Catalunha', '', true, 'percentual', 50);
+insert into public.config (id, nome_condominio, endereco, valor_condominio, regra_cobertura_ativa, tipo_acrescimo, valor_acrescimo)
+values (1, 'Residencial Catalunha', '', 400, true, 'percentual', 50);
 
 insert into public.categorias (id, nome, rateio_diferenciado_cobertura, cor) values
   ('0d6223af-cf73-43e7-bb77-e9681169aff2', 'Água', true, '#2c6cae'),

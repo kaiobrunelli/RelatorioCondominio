@@ -21,7 +21,8 @@ export class ConfigService {
       return;
     }
     if (data) {
-      this.state.set(linhaParaEntidade<ConfigCondominio>(data));
+      // Mescla com o padrão para não quebrar se o banco ainda não tiver uma coluna nova.
+      this.state.set({ ...CONFIG_PADRAO, ...linhaParaEntidade<ConfigCondominio>(data) });
     }
   }
 
