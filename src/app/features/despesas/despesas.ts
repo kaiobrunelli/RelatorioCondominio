@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -32,6 +33,7 @@ interface FormularioDespesa {
   fornecedorNome: string;
   fornecedorContato: string;
   observacoes: string;
+  vencimento: string;
 }
 
 interface FormularioCategoria {
@@ -51,7 +53,12 @@ function formularioVazio(competencia: string): FormularioDespesa {
     fornecedorNome: '',
     fornecedorContato: '',
     observacoes: '',
+    vencimento: '',
   };
+}
+
+function hojeIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 const CORES_CATEGORIA = ['#2c6cae', '#1a8a8a', '#f2a13c', '#2e9e5b', '#d64545', '#5c7690', '#7fb0dc', '#16375d'];
@@ -60,6 +67,7 @@ const CORES_CATEGORIA = ['#2c6cae', '#1a8a8a', '#f2a13c', '#2e9e5b', '#d64545', 
   selector: 'app-despesas',
   imports: [
     FormsModule,
+    DatePipe,
     BrlPipe,
     CompetenciaPipe,
     Badge,
@@ -149,6 +157,7 @@ export class DespesasPage {
       fornecedorNome: despesa.fornecedorNome,
       fornecedorContato: despesa.fornecedorContato,
       observacoes: despesa.observacoes,
+      vencimento: despesa.vencimento ?? '',
     };
     this.modalDespesaAberto.set(true);
   }
@@ -171,6 +180,7 @@ export class DespesasPage {
         fornecedorNome: dados.fornecedorNome.trim(),
         fornecedorContato: dados.fornecedorContato.trim(),
         observacoes: dados.observacoes.trim(),
+        vencimento: dados.vencimento || null,
       });
     } else {
       this.despesasService.criar({
@@ -183,6 +193,7 @@ export class DespesasPage {
         fornecedorNome: dados.fornecedorNome,
         fornecedorContato: dados.fornecedorContato,
         observacoes: dados.observacoes,
+        vencimento: dados.vencimento || null,
       });
     }
 
@@ -240,5 +251,9 @@ export class DespesasPage {
 
   alternarPago(despesa: Despesa): void {
     this.despesasService.marcarPago(despesa.id, !despesa.pago);
+  }
+
+  atrasada(despesa: Despesa): boolean {
+    return !despesa.pago && !!despesa.vencimento && despesa.vencimento < hojeIso();
   }
 }

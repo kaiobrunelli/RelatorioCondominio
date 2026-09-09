@@ -56,7 +56,9 @@ create table public.despesas (
   fornecedor_nome text not null default '',
   fornecedor_contato text not null default '',
   observacoes text not null default '',
-  -- Controle interno de pagamento ao fornecedor (não afeta o cálculo do rateio).
+  -- Data de vencimento (opcional), só para lembrete/exibição.
+  vencimento date,
+  -- Controle de pagamento ao fornecedor: só deduz do saldo de caixa quando true.
   pago boolean not null default false,
   criado_em timestamptz not null default now()
 );

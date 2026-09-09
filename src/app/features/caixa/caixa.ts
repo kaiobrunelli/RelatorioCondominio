@@ -122,8 +122,9 @@ export class CaixaPage {
   protected readonly totalEmAberto = computed(() => Math.max(0, this.totalDevido() - this.totalRecebidoMes()));
 
   /**
-   * Saldo acumulado até o mês selecionado. Ignora despesas de meses futuros (ex.: parcelas
-   * de compras parceladas ainda não vencidas) para não antecipar gastos que ainda não ocorreram.
+   * Saldo acumulado até o mês selecionado. Só entra dinheiro de fato movimentado: pagamentos
+   * recebidos, despesas já marcadas como "pago" (uma despesa lançada mas ainda não paga não
+   * deduz do caixa) e movimentações manuais.
    */
   protected readonly saldoAcumulado = computed(() => {
     const limite = this.month.competencia();
@@ -133,7 +134,7 @@ export class CaixaPage {
       .reduce((s, p) => s + p.valorPago, 0);
     const totalDespesas = this.despesasService
       .all()
-      .filter((d) => d.competencia >= INICIO_CONTROLE_CAIXA && d.competencia <= limite)
+      .filter((d) => d.pago && d.competencia >= INICIO_CONTROLE_CAIXA && d.competencia <= limite)
       .reduce((s, d) => s + d.valor, 0);
     const totalMovimentacoes = this.movimentacoesService
       .all()

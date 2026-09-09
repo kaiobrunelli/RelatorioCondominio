@@ -15,7 +15,9 @@ export interface Despesa {
   fornecedorNome: string;
   fornecedorContato: string;
   observacoes: string;
-  /** Indica se essa conta já foi paga ao fornecedor (controle interno, não afeta o rateio). */
+  /** Data de vencimento da conta (AAAA-MM-DD), opcional. */
+  vencimento: string | null;
+  /** Indica se essa conta já foi paga ao fornecedor. Só deduz do saldo de caixa quando true. */
   pago: boolean;
   criadoEm: string;
 }

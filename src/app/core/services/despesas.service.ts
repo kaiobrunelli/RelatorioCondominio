@@ -14,6 +14,15 @@ export interface NovaDespesa {
   fornecedorNome: string;
   fornecedorContato: string;
   observacoes: string;
+  /** Data de vencimento (AAAA-MM-DD) da primeira parcela/ocorrência, opcional. */
+  vencimento: string | null;
+}
+
+/** Soma meses a uma data completa (AAAA-MM-DD), mantendo o dia. Usado para projetar vencimentos de recorrências/parcelas. */
+function somarMesesData(data: string, quantidade: number): string {
+  const [ano, mes, dia] = data.split('-').map(Number);
+  const proxima = new Date(ano, mes - 1 + quantidade, dia);
+  return `${proxima.getFullYear()}-${String(proxima.getMonth() + 1).padStart(2, '0')}-${String(proxima.getDate()).padStart(2, '0')}`;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -50,6 +59,7 @@ export class DespesasService extends EntityStore<Despesa> {
         grupoId: null,
         parcelaAtual: null,
         parcelaTotal: null,
+        vencimento: dados.vencimento || null,
         pago: false,
         criadoEm: nowIso(),
       };
@@ -70,6 +80,7 @@ export class DespesasService extends EntityStore<Despesa> {
       grupoId,
       parcelaAtual: dados.tipo === 'parcelada' ? indice + 1 : null,
       parcelaTotal: dados.tipo === 'parcelada' ? repeticoes : null,
+      vencimento: dados.vencimento ? somarMesesData(dados.vencimento, indice) : null,
       pago: false,
       criadoEm,
     }));
