@@ -1,0 +1,106 @@
+<app-page-header title="Rateio" subtitle="Divisão da taxa de condomínio entre as unidades">
+  <app-month-switcher></app-month-switcher>
+</app-page-header>
+
+@if (unidadesOrdenadas().length === 0) {
+  <app-empty-state
+    title="Cadastre as unidades para calcular o rateio"
+    description="O rateio é calculado automaticamente a partir das unidades ativas e das despesas lançadas no mês."
+  >
+    <span icon>
+      <svg lucideCalculator class="h-5 w-5"></svg>
+    </span>
+    <a
+      routerLink="/unidades"
+      class="mt-2 inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+    >
+      Cadastrar unidades
+    </a>
+  </app-empty-state>
+} @else {
+  @if (config.config().regraCoberturaAtiva && rateio().cotaCobertura > 0) {
+    <div class="mb-6 flex items-start gap-3 rounded-2xl border border-primary-100 bg-white px-5 py-4 shadow-sm">
+      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+        <svg lucideDroplets class="h-5 w-5"></svg>
+      </span>
+      <div class="text-sm">
+        <p class="font-semibold text-ink">Regra diferenciada de água ativa</p>
+        <p class="text-ink-soft">
+          Unidades cobertura pagam
+          {{ config.config().tipoAcrescimo === 'fixo' ? (config.config().valorAcrescimo | brl) + ' a mais' : config.config().valorAcrescimo + '% a mais' }}
+          na cota de água. Cota padrão: <span class="font-semibold text-ink">{{ rateio().cotaBase | brl }}</span> ·
+          Cota cobertura: <span class="font-semibold text-ink">{{ rateio().cotaCobertura | brl }}</span>
+          <a routerLink="/configuracoes" class="ml-1 font-semibold text-primary-700 underline">Ajustar →</a>
+        </p>
+      </div>
+    </div>
+  }
+
+  <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <app-kpi-card label="Total de despesas do mês" [value]="rateio().totalDespesas | brl" tone="primary">
+      <svg lucideCalculator class="h-5 w-5 text-primary-600"></svg>
+    </app-kpi-card>
+    <app-kpi-card label="Unidades no rateio" [value]="unidadesOrdenadas().length.toString()" tone="neutral">
+      <svg lucideCalculator class="h-5 w-5 text-ink-soft"></svg>
+    </app-kpi-card>
+    <app-kpi-card label="Valor médio por unidade" [value]="(rateio().totalRateado / unidadesOrdenadas().length) | brl" tone="green">
+      <svg lucideCalculator class="h-5 w-5 text-accent-green"></svg>
+    </app-kpi-card>
+  </div>
+
+  <app-card [title]="'Rateio · ' + (rateio().competencia | competencia)" subtitle="Clique em uma unidade para ver o detalhamento por categoria">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[560px] text-left text-sm">
+        <thead class="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          <tr class="border-b border-primary-100">
+            <th class="py-2 pr-4"></th>
+            <th class="py-2 pr-4">Unidade</th>
+            <th class="py-2 pr-4">Morador</th>
+            <th class="py-2 pr-4">Tipo</th>
+            <th class="py-2 pr-4 text-right">Total a pagar</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (linha of unidadesOrdenadas(); track linha.unidade.id) {
+            <tr
+              class="cursor-pointer border-b border-primary-50 transition hover:bg-primary-50/40"
+              (click)="toggle(linha.unidade.id)"
+            >
+              <td class="py-3 pl-1">
+                <svg
+                  lucideChevronDown
+                  class="h-4 w-4 text-ink-soft transition-transform"
+                  [class.rotate-180]="expandida(linha.unidade.id)"
+                ></svg>
+              </td>
+              <td class="py-3 pr-4 font-semibold text-ink">{{ linha.unidade.identificacao }}</td>
+              <td class="py-3 pr-4 text-ink-soft">{{ linha.unidade.morador }}</td>
+              <td class="py-3 pr-4">
+                <app-badge [tone]="toneTipo(linha.unidade.tipo)">{{ linha.unidade.tipo === 'cobertura' ? 'Cobertura' : 'Padrão' }}</app-badge>
+              </td>
+              <td class="py-3 pr-4 text-right font-bold text-ink">{{ linha.total | brl }}</td>
+            </tr>
+            @if (expandida(linha.unidade.id)) {
+              <tr class="border-b border-primary-50 bg-surface-alt/60">
+                <td></td>
+                <td colspan="4" class="py-3 pr-4">
+                  <div class="flex flex-wrap gap-x-6 gap-y-1 text-xs text-ink-soft">
+                    @for (categoria of categoriasDaLinha(linha); track categoria.nome) {
+                      <span>{{ categoria.nome }}: <span class="font-semibold text-ink">{{ categoria.valor | brl }}</span></span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+        <tfoot>
+          <tr class="border-t-2 border-primary-100">
+            <td colspan="4" class="py-3 pr-4 text-right text-sm font-semibold text-ink-soft">Total rateado</td>
+            <td class="py-3 pr-4 text-right text-base font-extrabold text-ink">{{ rateio().totalRateado | brl }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </app-card>
+}

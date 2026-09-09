@@ -1,0 +1,96 @@
+<app-page-header title="Dashboard" subtitle="Visão geral financeira do condomínio">
+  <app-month-switcher></app-month-switcher>
+</app-page-header>
+
+@if (semUnidades()) {
+  <div class="mb-6 flex items-start gap-3 rounded-2xl border border-accent-amber/30 bg-accent-amber-bg px-5 py-4">
+    <svg lucideAlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-accent-amber"></svg>
+    <div class="text-sm text-ink">
+      <p class="font-semibold">Nenhuma unidade cadastrada</p>
+      <p class="text-ink-soft">
+        Cadastre os apartamentos do condomínio para que o rateio da taxa seja calculado automaticamente.
+        <a routerLink="/unidades" class="font-semibold text-primary-700 underline">Cadastrar unidades →</a>
+      </p>
+    </div>
+  </div>
+}
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <app-kpi-card label="Total gasto no mês" [value]="rateio().totalDespesas | brl" tone="primary">
+    <svg lucideReceiptText class="h-5 w-5 text-primary-600"></svg>
+  </app-kpi-card>
+  <app-kpi-card label="Total recebido no mês" [value]="totalRecebido() | brl" tone="green">
+    <svg lucideWallet class="h-5 w-5 text-accent-green"></svg>
+  </app-kpi-card>
+  <app-kpi-card
+    label="Saldo do mês"
+    [value]="saldoMes() | brl"
+    [tone]="saldoMes() >= 0 ? 'green' : 'red'"
+    hint="Recebido − gasto"
+  >
+    <svg lucidePiggyBank class="h-5 w-5" [class]="saldoMes() >= 0 ? 'text-accent-green' : 'text-accent-red'"></svg>
+  </app-kpi-card>
+  <app-kpi-card
+    label="Unidades ativas"
+    [value]="unidadesAtivas().toString()"
+    tone="neutral"
+    [hint]="rateio().unidades.length + ' recebendo rateio'"
+  >
+    <svg lucideBuilding2 class="h-5 w-5 text-ink-soft"></svg>
+  </app-kpi-card>
+</div>
+
+@if (parceladasEmAberto() > 0) {
+  <div class="mb-6 flex items-center gap-3 rounded-2xl border border-primary-100 bg-white px-5 py-3.5 shadow-sm">
+    <svg lucideCalendarClock class="h-5 w-5 shrink-0 text-primary-600"></svg>
+    <p class="text-sm text-ink">
+      <span class="font-semibold">{{ parceladasEmAberto() }}</span>
+      parcela(s) de despesas parceladas ainda em aberto a partir deste mês.
+      <a routerLink="/despesas" class="font-semibold text-primary-700 underline">Ver despesas →</a>
+    </p>
+  </div>
+}
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
+  <app-card title="Despesas por categoria" [subtitle]="rateio().competencia | competencia" class="lg:col-span-3">
+    @if (categoriasOrdenadas().length === 0) {
+      <app-empty-state title="Sem despesas neste mês" description="Cadastre uma despesa para começar a ver o resumo por categoria.">
+        <span icon>
+          <svg lucideReceiptText class="h-5 w-5"></svg>
+        </span>
+      </app-empty-state>
+    } @else {
+      <div class="space-y-3">
+        @for (categoria of categoriasOrdenadas(); track categoria.categoriaId) {
+          <div>
+            <div class="mb-1 flex items-center justify-between text-sm">
+              <span class="font-medium text-ink">{{ categoria.categoriaNome }}</span>
+              <span class="font-semibold text-ink">{{ categoria.total | brl }}</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-surface-alt">
+              <div class="h-full rounded-full bg-primary-500" [style.width.%]="categoria.percentual"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </app-card>
+
+  <app-card title="Evolução mensal" subtitle="Total de despesas · últimos 6 meses" class="lg:col-span-2">
+    <div class="flex h-40 items-end justify-between gap-2">
+      @for (item of tendencia(); track item.competencia) {
+        <div class="flex flex-1 flex-col items-center gap-2">
+          <div class="flex h-32 w-full items-end">
+            <div
+              class="w-full rounded-t-md"
+              [class]="item.competencia === rateio().competencia ? 'bg-primary-600' : 'bg-primary-200'"
+              [style.height.%]="item.altura"
+              [title]="item.valor | brl"
+            ></div>
+          </div>
+          <span class="text-[10px] font-medium uppercase text-ink-soft">{{ item.competencia | competencia: 'curta' }}</span>
+        </div>
+      }
+    </div>
+  </app-card>
+</div>

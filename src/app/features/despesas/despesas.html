@@ -1,0 +1,351 @@
+<app-page-header title="Despesas" subtitle="Lance e acompanhe os gastos do condomínio">
+  <app-month-switcher></app-month-switcher>
+  <button
+    type="button"
+    (click)="abrirCategorias()"
+    class="flex h-9 w-9 items-center justify-center rounded-xl border border-primary-100 bg-white text-ink-soft shadow-sm transition hover:bg-surface-alt"
+    title="Gerenciar categorias"
+  >
+    <svg lucideSettings2 class="h-4 w-4"></svg>
+  </button>
+  <button
+    type="button"
+    (click)="abrirNovaDespesa()"
+    class="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+  >
+    <svg lucidePlus class="h-4 w-4"></svg>
+    Nova despesa
+  </button>
+</app-page-header>
+
+<div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary-100 bg-white p-4 shadow-sm">
+  <input
+    type="text"
+    [ngModel]="busca()"
+    (ngModelChange)="busca.set($event)"
+    placeholder="Buscar por descrição ou fornecedor…"
+    class="min-w-[12rem] flex-1 rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+  />
+  <select
+    [ngModel]="filtroCategoria()"
+    (ngModelChange)="filtroCategoria.set($event)"
+    class="rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+  >
+    <option value="todas">Todas as categorias</option>
+    @for (categoria of categoriasService.all(); track categoria.id) {
+      <option [value]="categoria.id">{{ categoria.nome }}</option>
+    }
+  </select>
+  <select
+    [ngModel]="filtroTipo()"
+    (ngModelChange)="filtroTipo.set($event)"
+    class="rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+  >
+    <option value="todos">Todos os tipos</option>
+    <option value="unica">Única</option>
+    <option value="recorrente">Recorrente</option>
+    <option value="parcelada">Parcelada</option>
+  </select>
+  <label class="flex items-center gap-2 text-sm text-ink-soft">
+    <input
+      type="checkbox"
+      [ngModel]="mostrarTodosMeses()"
+      (ngModelChange)="mostrarTodosMeses.set($event)"
+      class="h-4 w-4 rounded border-primary-200 text-primary-600"
+    />
+    Mostrar todos os meses
+  </label>
+  <span class="ml-auto text-sm font-semibold text-ink">
+    Total: <span class="text-primary-700">{{ totalFiltrado() | brl }}</span>
+  </span>
+</div>
+
+@if (despesasFiltradas().length === 0) {
+  <app-empty-state
+    title="Nenhuma despesa encontrada"
+    description="Ajuste os filtros ou cadastre uma nova despesa para este mês."
+  >
+    <span icon>
+      <svg lucideReceiptText class="h-5 w-5"></svg>
+    </span>
+  </app-empty-state>
+} @else {
+  <div class="overflow-x-auto rounded-2xl border border-primary-100 bg-white shadow-sm">
+    <table class="w-full min-w-[720px] text-left text-sm">
+      <thead class="bg-surface-alt text-xs font-semibold uppercase tracking-wide text-ink-soft">
+        <tr>
+          <th class="px-4 py-3">Categoria</th>
+          <th class="px-4 py-3">Descrição</th>
+          <th class="px-4 py-3">Competência</th>
+          <th class="px-4 py-3">Tipo</th>
+          <th class="px-4 py-3">Fornecedor</th>
+          <th class="px-4 py-3 text-right">Valor</th>
+          <th class="px-4 py-3 text-right">Ações</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-primary-50">
+        @for (despesa of despesasFiltradas(); track despesa.id) {
+          <tr class="transition hover:bg-primary-50/40">
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full" [style.background-color]="corCategoria(despesa.categoriaId)"></span>
+                {{ nomeCategoria(despesa.categoriaId) }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-ink">
+              {{ despesa.descricao }}
+              @if (despesa.parcelaTotal) {
+                <span class="ml-1 text-xs font-medium text-ink-soft">({{ despesa.parcelaAtual }}/{{ despesa.parcelaTotal }})</span>
+              }
+            </td>
+            <td class="px-4 py-3 text-ink-soft">{{ despesa.competencia | competencia: 'curta' }}</td>
+            <td class="px-4 py-3">
+              <app-badge [tone]="toneTipo(despesa.tipo)">{{ rotuloTipo(despesa.tipo) }}</app-badge>
+            </td>
+            <td class="px-4 py-3 text-ink-soft">{{ despesa.fornecedorNome || '—' }}</td>
+            <td class="px-4 py-3 text-right font-semibold text-ink">{{ despesa.valor | brl }}</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-end gap-1">
+                <button
+                  type="button"
+                  (click)="abrirEdicaoDespesa(despesa)"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-primary-50 hover:text-primary-700"
+                  title="Editar"
+                >
+                  <svg lucidePencil class="h-4 w-4"></svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="pedirExclusao(despesa, 'unico')"
+                  class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-accent-red-bg hover:text-accent-red"
+                  title="Excluir este lançamento"
+                >
+                  <svg lucideTrash2 class="h-4 w-4"></svg>
+                </button>
+                @if (despesa.grupoId) {
+                  <button
+                    type="button"
+                    (click)="pedirExclusao(despesa, 'grupo')"
+                    class="flex h-8 items-center justify-center rounded-lg px-2 text-xs font-semibold text-ink-soft transition hover:bg-accent-red-bg hover:text-accent-red"
+                    title="Excluir toda a série (recorrência/parcelamento)"
+                  >
+                    série
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<app-modal
+  [open]="modalDespesaAberto()"
+  [title]="editandoId() ? 'Editar despesa' : 'Nova despesa'"
+  maxWidth="max-w-xl"
+  (closed)="fecharModalDespesa()"
+>
+  <form (ngSubmit)="salvarDespesa()" class="space-y-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">Categoria</label>
+        <select
+          [(ngModel)]="formulario.categoriaId"
+          name="categoriaId"
+          required
+          class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        >
+          <option value="" disabled>Selecione…</option>
+          @for (categoria of categoriasService.all(); track categoria.id) {
+            <option [value]="categoria.id">{{ categoria.nome }}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">Valor {{ formulario.tipo !== 'unica' && !editandoId() ? '(por parcela/mês)' : '' }}</label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          [(ngModel)]="formulario.valor"
+          name="valor"
+          required
+          class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-semibold text-ink-soft">Descrição</label>
+      <input
+        type="text"
+        [(ngModel)]="formulario.descricao"
+        name="descricao"
+        required
+        placeholder="Ex.: Conta de água"
+        class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+      />
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">
+          {{ editandoId() ? 'Competência' : 'Competência inicial' }}
+        </label>
+        <input
+          type="month"
+          [(ngModel)]="formulario.competencia"
+          name="competencia"
+          required
+          class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        />
+      </div>
+
+      @if (!editandoId()) {
+        <div>
+          <label class="mb-1 block text-xs font-semibold text-ink-soft">Tipo de lançamento</label>
+          <select
+            [(ngModel)]="formulario.tipo"
+            name="tipo"
+            class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+          >
+            <option value="unica">Única (só este mês)</option>
+            <option value="recorrente">Recorrente (repete todo mês)</option>
+            <option value="parcelada">Parcelada (parcelas fixas)</option>
+          </select>
+        </div>
+      }
+    </div>
+
+    @if (!editandoId() && formulario.tipo !== 'unica') {
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">
+          {{ formulario.tipo === 'parcelada' ? 'Número de parcelas' : 'Repetir por quantos meses' }}
+        </label>
+        <input
+          type="number"
+          min="2"
+          max="60"
+          [(ngModel)]="formulario.repeticoes"
+          name="repeticoes"
+          class="w-full max-w-[10rem] rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        />
+        <p class="mt-1 flex items-start gap-1.5 text-xs text-ink-soft">
+          <svg lucideCircleAlert class="mt-0.5 h-3.5 w-3.5 shrink-0"></svg>
+          Serão criados lançamentos do mesmo valor a partir da competência informada.
+        </p>
+      </div>
+    }
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">Fornecedor (opcional)</label>
+        <input
+          type="text"
+          [(ngModel)]="formulario.fornecedorNome"
+          name="fornecedorNome"
+          class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-semibold text-ink-soft">Contato do fornecedor</label>
+        <input
+          type="text"
+          [(ngModel)]="formulario.fornecedorContato"
+          name="fornecedorContato"
+          class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-semibold text-ink-soft">Observações</label>
+      <textarea
+        [(ngModel)]="formulario.observacoes"
+        name="observacoes"
+        rows="2"
+        class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+      ></textarea>
+    </div>
+
+    <div class="flex justify-end gap-2 pt-2">
+      <button
+        type="button"
+        (click)="fecharModalDespesa()"
+        class="rounded-lg px-4 py-2 text-sm font-semibold text-ink-soft transition hover:bg-surface-alt"
+      >
+        Cancelar
+      </button>
+      <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
+        Salvar
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="modalCategoriasAberto()" title="Categorias de despesa" (closed)="modalCategoriasAberto.set(false)">
+  <div class="space-y-2">
+    @for (categoria of categoriasService.all(); track categoria.id) {
+      <div class="flex items-center justify-between rounded-lg border border-primary-50 px-3 py-2">
+        <span class="flex items-center gap-2 text-sm text-ink">
+          <span class="h-2.5 w-2.5 rounded-full" [style.background-color]="categoria.cor"></span>
+          {{ categoria.nome }}
+          @if (categoria.rateioDiferenciadoCobertura) {
+            <app-badge tone="amber">rateio cobertura</app-badge>
+          }
+        </span>
+        <button
+          type="button"
+          (click)="removerCategoria(categoria.id)"
+          [disabled]="categoriaEmUso(categoria.id)"
+          [title]="categoriaEmUso(categoria.id) ? 'Categoria em uso por despesas cadastradas' : 'Remover'"
+          class="flex h-7 w-7 items-center justify-center rounded-lg text-ink-soft transition hover:bg-accent-red-bg hover:text-accent-red disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <svg lucideTrash2 class="h-3.5 w-3.5"></svg>
+        </button>
+      </div>
+    }
+  </div>
+
+  <form (ngSubmit)="salvarCategoria()" class="mt-4 space-y-3 border-t border-primary-100 pt-4">
+    <div>
+      <label class="mb-1 block text-xs font-semibold text-ink-soft">Nova categoria</label>
+      <input
+        type="text"
+        [(ngModel)]="formularioCategoria.nome"
+        name="nomeCategoria"
+        required
+        placeholder="Ex.: Portaria"
+        class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
+      />
+    </div>
+    <label class="flex items-start gap-2 text-xs text-ink-soft">
+      <input
+        type="checkbox"
+        [(ngModel)]="formularioCategoria.rateioDiferenciadoCobertura"
+        name="rateioDiferenciado"
+        class="mt-0.5 h-4 w-4 rounded border-primary-200 text-primary-600"
+      />
+      Aplicar regra diferenciada de cobertura no rateio desta categoria (ex.: água)
+    </label>
+    <div class="flex justify-end">
+      <button type="submit" class="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
+        Adicionar categoria
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="confirmacao() !== null"
+  title="Excluir despesa"
+  [message]="
+    confirmacao()?.tipo === 'grupo'
+      ? 'Todos os lançamentos desta recorrência/parcelamento serão removidos. Essa ação não pode ser desfeita.'
+      : 'Este lançamento será removido. Essa ação não pode ser desfeita.'
+  "
+  (confirmed)="confirmarExclusao()"
+  (cancelled)="confirmacao.set(null)"
+></app-confirm-dialog>

@@ -1,0 +1,126 @@
+<div class="flex min-h-screen bg-surface">
+  @if (sidebarOpen()) {
+    <div class="fixed inset-0 z-40 bg-primary-950/50 md:hidden" (click)="closeSidebar()"></div>
+  }
+
+  <aside
+    class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col bg-primary-900 text-white transition-transform duration-200 md:static md:translate-x-0"
+    [class.translate-x-0]="sidebarOpen()"
+  >
+    <div class="flex items-center gap-3 border-b border-white/10 px-6 py-5">
+      <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-lg font-extrabold">
+        {{ config.config().nomeCondominio.charAt(0) }}
+      </div>
+      <div class="min-w-0">
+        <p class="truncate text-sm font-bold leading-tight">{{ config.config().nomeCondominio }}</p>
+        <p class="text-xs text-white/60">Gestão do condomínio</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 space-y-1 px-3 py-4">
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideLayoutDashboard class="h-5 w-5"></svg>
+        Dashboard
+      </a>
+      <a
+        routerLink="/despesas"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideReceiptText class="h-5 w-5"></svg>
+        Despesas
+      </a>
+      <a
+        routerLink="/unidades"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideBuilding2 class="h-5 w-5"></svg>
+        Unidades
+      </a>
+      <a
+        routerLink="/rateio"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideCalculator class="h-5 w-5"></svg>
+        Rateio
+      </a>
+      <a
+        routerLink="/caixa"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideLandmark class="h-5 w-5"></svg>
+        Caixa
+      </a>
+      <a
+        routerLink="/relatorio"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideFileBarChart class="h-5 w-5"></svg>
+        Relatório
+      </a>
+      <a
+        routerLink="/configuracoes"
+        routerLinkActive="bg-white/15 text-white"
+        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+        (click)="closeSidebar()"
+      >
+        <svg lucideSettings class="h-5 w-5"></svg>
+        Configurações
+      </a>
+    </nav>
+
+    <div class="border-t border-white/10 px-6 py-4">
+      <button
+        type="button"
+        (click)="sair()"
+        class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/70 transition hover:bg-white/10 hover:text-white"
+      >
+        <svg lucideLogOut class="h-5 w-5"></svg>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    <header class="flex items-center gap-3 border-b border-primary-100 bg-white px-4 py-3 md:hidden">
+      <button
+        type="button"
+        (click)="toggleSidebar()"
+        class="flex h-9 w-9 items-center justify-center rounded-lg text-ink-soft hover:bg-surface-alt"
+        aria-label="Abrir menu"
+      >
+        @if (sidebarOpen()) {
+          <svg lucideX class="h-5 w-5"></svg>
+        } @else {
+          <svg lucideMenu class="h-5 w-5"></svg>
+        }
+      </button>
+      <span class="text-sm font-bold text-ink">{{ config.config().nomeCondominio }}</span>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8">
+      @if (bootstrap.pronto()) {
+        <router-outlet></router-outlet>
+      } @else {
+        <div class="flex h-64 items-center justify-center gap-2 text-ink-soft">
+          <svg lucideLoaderCircle class="h-5 w-5 animate-spin"></svg>
+          Carregando dados do condomínio…
+        </div>
+      }
+    </main>
+  </div>
+</div>

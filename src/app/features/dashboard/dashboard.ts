@@ -1,0 +1,92 @@
+import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  LucideAlertTriangle,
+  LucideBuilding2,
+  LucideCalendarClock,
+  LucidePiggyBank,
+  LucideReceiptText,
+  LucideWallet,
+} from '@lucide/angular';
+import { DespesasService } from '../../core/services/despesas.service';
+import { MonthService } from '../../core/services/month.service';
+import { PagamentosService } from '../../core/services/pagamentos.service';
+import { RateioService } from '../../core/services/rateio.service';
+import { UnidadesService } from '../../core/services/unidades.service';
+import { somarMeses } from '../../core/utils/competencia.util';
+import { BrlPipe } from '../../shared/pipes/brl.pipe';
+import { CompetenciaPipe } from '../../shared/pipes/competencia.pipe';
+import { Card } from '../../shared/ui/card/card';
+import { EmptyState } from '../../shared/ui/empty-state/empty-state';
+import { KpiCard } from '../../shared/ui/kpi-card/kpi-card';
+import { MonthSwitcher } from '../../shared/ui/month-switcher/month-switcher';
+import { PageHeader } from '../../shared/ui/page-header/page-header';
+
+@Component({
+  selector: 'app-dashboard',
+  imports: [
+    RouterLink,
+    BrlPipe,
+    CompetenciaPipe,
+    Card,
+    EmptyState,
+    KpiCard,
+    MonthSwitcher,
+    PageHeader,
+    LucideAlertTriangle,
+    LucideBuilding2,
+    LucideCalendarClock,
+    LucidePiggyBank,
+    LucideReceiptText,
+    LucideWallet,
+  ],
+  templateUrl: './dashboard.html',
+})
+export class Dashboard {
+  private readonly despesasService = inject(DespesasService);
+  private readonly unidadesService = inject(UnidadesService);
+  private readonly pagamentosService = inject(PagamentosService);
+  protected readonly rateioService = inject(RateioService);
+  protected readonly month = inject(MonthService);
+
+  protected readonly rateio = computed(() => this.rateioService.calcular(this.month.competencia()));
+
+  protected readonly totalRecebido = computed(() =>
+    this.pagamentosService
+      .porCompetencia(this.month.competencia())
+      .reduce((soma, p) => soma + p.valorPago, 0),
+  );
+
+  protected readonly saldoMes = computed(() => this.totalRecebido() - this.rateio().totalDespesas);
+
+  protected readonly unidadesAtivas = computed(() => this.unidadesService.ativas().length);
+
+  protected readonly categoriasOrdenadas = computed(() => {
+    const total = this.rateio().totalDespesas;
+    return [...this.rateio().categorias]
+      .sort((a, b) => b.total - a.total)
+      .map((c) => ({ ...c, percentual: total > 0 ? (c.total / total) * 100 : 0 }));
+  });
+
+  protected readonly tendencia = computed(() => {
+    const meses = Array.from({ length: 6 }, (_, i) => somarMeses(this.month.competencia(), i - 5));
+    const valores = meses.map((competencia) =>
+      this.despesasService.porCompetencia(competencia).reduce((s, d) => s + d.valor, 0),
+    );
+    const max = Math.max(1, ...valores);
+    return meses.map((competencia, i) => ({
+      competencia,
+      valor: valores[i],
+      altura: Math.max(4, Math.round((valores[i] / max) * 100)),
+    }));
+  });
+
+  protected readonly semUnidades = computed(() => this.unidadesService.ativas().length === 0);
+
+  protected readonly parceladasEmAberto = computed(() => {
+    const hoje = this.month.competencia();
+    return this.despesasService
+      .all()
+      .filter((d) => d.tipo === 'parcelada' && d.competencia >= hoje).length;
+  });
+}
