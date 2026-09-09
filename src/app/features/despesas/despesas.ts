@@ -3,6 +3,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   LucideCircleAlert,
+  LucideCircleCheck,
+  LucideClock,
   LucidePencil,
   LucidePlus,
   LucideReceiptText,
@@ -19,6 +21,7 @@ import { CompetenciaPipe } from '../../shared/pipes/competencia.pipe';
 import { Badge, BadgeTone } from '../../shared/ui/badge/badge';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog/confirm-dialog';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
+import { KpiCard } from '../../shared/ui/kpi-card/kpi-card';
 import { Modal } from '../../shared/ui/modal/modal';
 import { MonthSwitcher } from '../../shared/ui/month-switcher/month-switcher';
 import { PageHeader } from '../../shared/ui/page-header/page-header';
@@ -73,10 +76,13 @@ const CORES_CATEGORIA = ['#2c6cae', '#1a8a8a', '#f2a13c', '#2e9e5b', '#d64545', 
     Badge,
     ConfirmDialog,
     EmptyState,
+    KpiCard,
     Modal,
     MonthSwitcher,
     PageHeader,
     LucideCircleAlert,
+    LucideCircleCheck,
+    LucideClock,
     LucidePencil,
     LucidePlus,
     LucideReceiptText,
@@ -130,6 +136,16 @@ export class DespesasPage {
   });
 
   protected readonly totalFiltrado = computed(() => this.despesasFiltradas().reduce((s, d) => s + d.valor, 0));
+  protected readonly totalPago = computed(() =>
+    this.despesasFiltradas()
+      .filter((d) => d.pago)
+      .reduce((s, d) => s + d.valor, 0),
+  );
+  protected readonly totalAPagar = computed(() =>
+    this.despesasFiltradas()
+      .filter((d) => !d.pago)
+      .reduce((s, d) => s + d.valor, 0),
+  );
 
   nomeCategoria(categoriaId: string): string {
     return this.categoriasService.byId(categoriaId)?.nome ?? 'Sem categoria';

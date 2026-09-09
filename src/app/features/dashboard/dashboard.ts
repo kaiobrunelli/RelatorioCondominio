@@ -2,7 +2,6 @@ import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   LucideAlertTriangle,
-  LucideBuilding2,
   LucideCalendarClock,
   LucidePiggyBank,
   LucideReceiptText,
@@ -35,7 +34,6 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
     MonthSwitcher,
     PageHeader,
     LucideAlertTriangle,
-    LucideBuilding2,
     LucideCalendarClock,
     LucidePiggyBank,
     LucideReceiptText,
@@ -60,8 +58,6 @@ export class Dashboard {
   );
 
   protected readonly saldoMes = computed(() => this.totalRecebido() - this.rateio().totalDespesas);
-
-  protected readonly unidadesAtivas = computed(() => this.unidadesService.ativas().length);
 
   protected readonly categoriasOrdenadas = computed(() => {
     const despesasMes = this.despesasService.porCompetencia(this.month.competencia());

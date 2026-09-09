@@ -18,6 +18,15 @@
   </button>
 </app-page-header>
 
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <app-kpi-card label="Despesas pagas" [value]="totalPago() | brl" tone="green">
+    <svg lucideCircleCheck class="h-5 w-5 text-accent-green"></svg>
+  </app-kpi-card>
+  <app-kpi-card label="Despesas a pagar" [value]="totalAPagar() | brl" tone="red">
+    <svg lucideClock class="h-5 w-5 text-accent-red"></svg>
+  </app-kpi-card>
+</div>
+
 <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary-100 bg-white p-4 shadow-sm">
   <input
     type="text"

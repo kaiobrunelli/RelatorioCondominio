@@ -15,12 +15,12 @@
   </div>
 }
 
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-  <app-kpi-card label="Total gasto no mês" [value]="rateio().totalDespesas | brl" tone="primary">
-    <svg lucideReceiptText class="h-5 w-5 text-primary-600"></svg>
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  <app-kpi-card label="Total gasto no mês" [value]="rateio().totalDespesas | brl" tone="red">
+    <svg lucideReceiptText class="h-5 w-5 text-accent-red"></svg>
   </app-kpi-card>
-  <app-kpi-card label="Total recebido no mês" [value]="totalRecebido() | brl" tone="green">
-    <svg lucideWallet class="h-5 w-5 text-accent-green"></svg>
+  <app-kpi-card label="Total recebido no mês" [value]="totalRecebido() | brl" tone="primary">
+    <svg lucideWallet class="h-5 w-5 text-primary-600"></svg>
   </app-kpi-card>
   <app-kpi-card
     label="Saldo do mês"
@@ -29,14 +29,6 @@
     hint="Recebido − gasto"
   >
     <svg lucidePiggyBank class="h-5 w-5" [class]="saldoMes() >= 0 ? 'text-accent-green' : 'text-accent-red'"></svg>
-  </app-kpi-card>
-  <app-kpi-card
-    label="Unidades ativas"
-    [value]="unidadesAtivas().toString()"
-    tone="neutral"
-    [hint]="rateio().unidades.length + ' recebendo cobrança'"
-  >
-    <svg lucideBuilding2 class="h-5 w-5 text-ink-soft"></svg>
   </app-kpi-card>
 </div>
 
