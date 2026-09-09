@@ -13,7 +13,9 @@
       </div>
       <div class="min-w-0">
         <p class="truncate text-sm font-bold leading-tight">{{ config.config().nomeCondominio }}</p>
-        <p class="text-xs text-white/60">Gestão do condomínio</p>
+        <p class="text-xs text-white/60">
+          {{ auth.somenteLeitura() ? 'Somente leitura' : 'Gestão do condomínio' }}
+        </p>
       </div>
     </div>
 

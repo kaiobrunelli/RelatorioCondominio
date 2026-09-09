@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideBuilding2, LucidePencil, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { TipoUnidade, Unidade } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { UnidadesService } from '../../core/services/unidades.service';
 import { Badge, BadgeTone } from '../../shared/ui/badge/badge';
 import { ConfirmDialog } from '../../shared/ui/confirm-dialog/confirm-dialog';
@@ -29,6 +30,7 @@ function formularioVazio(): FormularioUnidade {
 })
 export class UnidadesPage {
   protected readonly unidadesService = inject(UnidadesService);
+  protected readonly somenteLeitura = inject(AuthService).somenteLeitura;
 
   protected readonly modalAberto = signal(false);
   protected readonly editandoId = signal<string | null>(null);

@@ -12,6 +12,7 @@ import {
   LucideTrash2,
 } from '@lucide/angular';
 import { Despesa, TipoDespesa } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { CategoriasService } from '../../core/services/categorias.service';
 import { DespesasService } from '../../core/services/despesas.service';
 import { MonthService } from '../../core/services/month.service';
@@ -95,6 +96,7 @@ export class DespesasPage {
   protected readonly despesasService = inject(DespesasService);
   protected readonly categoriasService = inject(CategoriasService);
   protected readonly month = inject(MonthService);
+  protected readonly somenteLeitura = inject(AuthService).somenteLeitura;
 
   protected readonly mostrarTodosMeses = signal(false);
   protected readonly filtroCategoria = signal('todas');

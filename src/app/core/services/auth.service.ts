@@ -16,6 +16,14 @@ export class AuthService {
 
   readonly autenticado = computed(() => !!this.session());
 
+  /** Papel do usuário logado, vindo do app_metadata (só editável via painel/admin, nunca pelo próprio usuário). */
+  readonly perfil = computed<'admin' | 'visualizador'>(() =>
+    this.session()?.user.app_metadata?.['role'] === 'visualizador' ? 'visualizador' : 'admin',
+  );
+
+  /** Quando true, a UI deve esconder/desabilitar qualquer ação de cadastro/edição/exclusão. */
+  readonly somenteLeitura = computed(() => this.perfil() === 'visualizador');
+
   constructor() {
     this.client.auth.onAuthStateChange((_evento, session) => {
       this.session.set(session);

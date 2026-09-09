@@ -38,7 +38,9 @@
             <th class="py-2 pr-4 text-right">Valor devido</th>
             <th class="py-2 pr-4 text-right">Valor pago</th>
             <th class="py-2 pr-4">Status</th>
-            <th class="py-2 pr-4 text-right">Ação</th>
+            @if (!somenteLeitura()) {
+              <th class="py-2 pr-4 text-right">Ação</th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -51,15 +53,17 @@
               <td class="py-3 pr-4">
                 <app-badge [tone]="toneStatus(linha.status)">{{ rotuloStatus(linha.status) }}</app-badge>
               </td>
-              <td class="py-3 pr-4 text-right">
-                <button
-                  type="button"
-                  (click)="abrirPagamento(linha)"
-                  class="rounded-lg border border-primary-100 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-50"
-                >
-                  {{ linha.status === 'pendente' ? 'Registrar' : 'Editar' }}
-                </button>
-              </td>
+              @if (!somenteLeitura()) {
+                <td class="py-3 pr-4 text-right">
+                  <button
+                    type="button"
+                    (click)="abrirPagamento(linha)"
+                    class="rounded-lg border border-primary-100 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-50"
+                  >
+                    {{ linha.status === 'pendente' ? 'Registrar' : 'Editar' }}
+                  </button>
+                </td>
+              }
             </tr>
           }
         </tbody>
@@ -69,16 +73,18 @@
 </app-card>
 
 <app-card title="Movimentações manuais" subtitle="Saldo inicial, retiradas, aportes e outros ajustes de caixa">
-  <div class="mb-4 flex justify-end">
-    <button
-      type="button"
-      (click)="abrirMovimentacao()"
-      class="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
-    >
-      <svg lucidePlus class="h-4 w-4"></svg>
-      Nova movimentação
-    </button>
-  </div>
+  @if (!somenteLeitura()) {
+    <div class="mb-4 flex justify-end">
+      <button
+        type="button"
+        (click)="abrirMovimentacao()"
+        class="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+      >
+        <svg lucidePlus class="h-4 w-4"></svg>
+        Nova movimentação
+      </button>
+    </div>
+  }
 
   @if (movimentacoesOrdenadas().length === 0) {
     <app-empty-state title="Nenhuma movimentação manual" description="Registre entradas ou saídas que não vêm do rateio, como retiradas para reforma.">
@@ -95,7 +101,9 @@
             <th class="py-2 pr-4">Descrição</th>
             <th class="py-2 pr-4">Tipo</th>
             <th class="py-2 pr-4 text-right">Valor</th>
-            <th class="py-2 pr-4 text-right">Ações</th>
+            @if (!somenteLeitura()) {
+              <th class="py-2 pr-4 text-right">Ações</th>
+            }
           </tr>
         </thead>
         <tbody>
@@ -111,16 +119,18 @@
               <td class="py-3 pr-4 text-right font-semibold" [class]="movimentacao.tipo === 'entrada' ? 'text-accent-green' : 'text-accent-red'">
                 {{ movimentacao.tipo === 'entrada' ? '+' : '−' }} {{ movimentacao.valor | brl }}
               </td>
-              <td class="py-3 pr-4 text-right">
-                <button
-                  type="button"
-                  (click)="removerMovimentacao(movimentacao)"
-                  class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-accent-red-bg hover:text-accent-red"
-                  title="Remover"
-                >
-                  <svg lucideTrash2 class="h-4 w-4"></svg>
-                </button>
-              </td>
+              @if (!somenteLeitura()) {
+                <td class="py-3 pr-4 text-right">
+                  <button
+                    type="button"
+                    (click)="removerMovimentacao(movimentacao)"
+                    class="flex h-8 w-8 items-center justify-center rounded-lg text-ink-soft transition hover:bg-accent-red-bg hover:text-accent-red"
+                    title="Remover"
+                  >
+                    <svg lucideTrash2 class="h-4 w-4"></svg>
+                  </button>
+                </td>
+              }
             </tr>
           }
         </tbody>

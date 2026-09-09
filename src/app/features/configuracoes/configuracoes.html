@@ -1,6 +1,14 @@
 <app-page-header title="Configurações" subtitle="Dados do condomínio e regras de rateio"></app-page-header>
 
+@if (somenteLeitura()) {
+  <div class="mb-6 flex items-start gap-3 rounded-2xl border border-primary-100 bg-white px-5 py-4 shadow-sm">
+    <svg lucideLock class="mt-0.5 h-5 w-5 shrink-0 text-ink-soft"></svg>
+    <p class="text-sm text-ink-soft">Seu usuário tem acesso somente leitura — as configurações abaixo não podem ser alteradas.</p>
+  </div>
+}
+
 <form (ngSubmit)="salvar()" class="space-y-6">
+  <fieldset [disabled]="somenteLeitura()" class="space-y-6">
   <app-card title="Dados do condomínio" subtitle="Usados no cabeçalho e nos relatórios" [hasIcon]="true">
     <span icon>
       <svg lucideBuilding2 class="h-4 w-4"></svg>
@@ -12,6 +20,7 @@
           type="text"
           [(ngModel)]="formulario.nomeCondominio"
           name="nomeCondominio"
+          [disabled]="somenteLeitura()"
           required
           class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
         />
@@ -22,6 +31,7 @@
           type="text"
           [(ngModel)]="formulario.endereco"
           name="endereco"
+          [disabled]="somenteLeitura()"
           class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
         />
       </div>
@@ -40,6 +50,7 @@
         step="0.01"
         [(ngModel)]="formulario.valorCondominio"
         name="valorCondominio"
+        [disabled]="somenteLeitura()"
         required
         class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
       />
@@ -64,6 +75,7 @@
         type="checkbox"
         [(ngModel)]="formulario.regraCoberturaAtiva"
         name="regraCoberturaAtiva"
+        [disabled]="somenteLeitura()"
         class="h-4 w-4 rounded border-primary-200 text-primary-600"
       />
       Aplicar acréscimo para unidades cobertura nas categorias marcadas como "rateio diferenciado"
@@ -76,6 +88,7 @@
           <select
             [(ngModel)]="formulario.tipoAcrescimo"
             name="tipoAcrescimo"
+            [disabled]="somenteLeitura()"
             class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
           >
             <option value="fixo">Valor fixo em R$ a mais</option>
@@ -92,6 +105,7 @@
             step="0.01"
             [(ngModel)]="formulario.valorAcrescimo"
             name="valorAcrescimo"
+            [disabled]="somenteLeitura()"
             class="w-full rounded-lg border border-primary-100 px-3 py-2 text-sm outline-none focus:border-primary-400"
           />
         </div>
@@ -102,16 +116,19 @@
       </p>
     }
   </app-card>
+  </fieldset>
 
-  <div class="flex items-center gap-3">
-    <button type="submit" class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
-      Salvar alterações
-    </button>
-    @if (salvo()) {
-      <span class="flex items-center gap-1.5 text-sm font-semibold text-accent-green">
-        <svg lucideCheck class="h-4 w-4"></svg>
-        Configurações salvas
-      </span>
-    }
-  </div>
+  @if (!somenteLeitura()) {
+    <div class="flex items-center gap-3">
+      <button type="submit" class="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700">
+        Salvar alterações
+      </button>
+      @if (salvo()) {
+        <span class="flex items-center gap-1.5 text-sm font-semibold text-accent-green">
+          <svg lucideCheck class="h-4 w-4"></svg>
+          Configurações salvas
+        </span>
+      }
+    </div>
+  }
 </form>

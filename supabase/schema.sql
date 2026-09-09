@@ -110,12 +110,24 @@ alter table public.pagamentos enable row level security;
 alter table public.movimentacoes enable row level security;
 alter table public.config enable row level security;
 
-create policy "somente_autenticados" on public.categorias for all to authenticated using (true) with check (true);
-create policy "somente_autenticados" on public.unidades for all to authenticated using (true) with check (true);
-create policy "somente_autenticados" on public.despesas for all to authenticated using (true) with check (true);
-create policy "somente_autenticados" on public.pagamentos for all to authenticated using (true) with check (true);
-create policy "somente_autenticados" on public.movimentacoes for all to authenticated using (true) with check (true);
-create policy "somente_autenticados" on public.config for all to authenticated using (true) with check (true);
+-- Usuário com app_metadata.role = 'visualizador' só lê; qualquer outro autenticado
+-- (inclusive sem role definida) é tratado como admin e pode cadastrar/editar/excluir.
+create or replace function public.eh_visualizador() returns boolean
+language sql stable as $$
+  select coalesce(auth.jwt() -> 'app_metadata' ->> 'role', 'admin') = 'visualizador';
+$$;
+
+do $$
+declare
+  tabela text;
+begin
+  foreach tabela in array array['categorias', 'unidades', 'despesas', 'pagamentos', 'movimentacoes', 'config'] loop
+    execute format('create policy "leitura_autenticados" on public.%I for select to authenticated using (true)', tabela);
+    execute format('create policy "insercao_admin" on public.%I for insert to authenticated with check (not public.eh_visualizador())', tabela);
+    execute format('create policy "atualizacao_admin" on public.%I for update to authenticated using (not public.eh_visualizador()) with check (not public.eh_visualizador())', tabela);
+    execute format('create policy "exclusao_admin" on public.%I for delete to authenticated using (not public.eh_visualizador())', tabela);
+  end loop;
+end $$;
 
 -- Nenhuma policy é criada para o papel "anon" (visitante não logado), então o
 -- Postgres nega por padrão todo acesso de fora do app autenticado.

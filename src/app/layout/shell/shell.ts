@@ -40,7 +40,7 @@ import { ConfigService } from '../../core/services/config.service';
 export class Shell {
   protected readonly config = inject(ConfigService);
   protected readonly bootstrap = inject(BootstrapService);
-  private readonly auth = inject(AuthService);
+  protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly sidebarOpen = signal(false);
 

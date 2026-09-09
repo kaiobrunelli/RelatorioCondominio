@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideLandmark, LucidePlus, LucideTrash2, LucideWallet } from '@lucide/angular';
 import { Movimentacao, TipoMovimentacao, Unidade } from '../../core/models';
+import { AuthService } from '../../core/services/auth.service';
 import { CaixaService } from '../../core/services/caixa.service';
 import { MonthService } from '../../core/services/month.service';
 import { MovimentacoesService } from '../../core/services/movimentacoes.service';
@@ -71,6 +72,7 @@ function hojeIso(): string {
 export class CaixaPage {
   private readonly rateioService = inject(RateioService);
   private readonly caixaService = inject(CaixaService);
+  protected readonly somenteLeitura = inject(AuthService).somenteLeitura;
   protected readonly unidadesService = inject(UnidadesService);
   protected readonly pagamentosService = inject(PagamentosService);
   protected readonly movimentacoesService = inject(MovimentacoesService);
