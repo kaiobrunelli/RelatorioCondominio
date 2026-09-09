@@ -2,8 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideLandmark, LucidePlus, LucideTrash2, LucideWallet } from '@lucide/angular';
 import { Movimentacao, TipoMovimentacao, Unidade } from '../../core/models';
-import { INICIO_CONTROLE_CAIXA } from '../../core/constants';
-import { DespesasService } from '../../core/services/despesas.service';
+import { CaixaService } from '../../core/services/caixa.service';
 import { MonthService } from '../../core/services/month.service';
 import { MovimentacoesService } from '../../core/services/movimentacoes.service';
 import { NovoPagamento, PagamentosService } from '../../core/services/pagamentos.service';
@@ -71,7 +70,7 @@ function hojeIso(): string {
 })
 export class CaixaPage {
   private readonly rateioService = inject(RateioService);
-  private readonly despesasService = inject(DespesasService);
+  private readonly caixaService = inject(CaixaService);
   protected readonly unidadesService = inject(UnidadesService);
   protected readonly pagamentosService = inject(PagamentosService);
   protected readonly movimentacoesService = inject(MovimentacoesService);
@@ -121,27 +120,7 @@ export class CaixaPage {
   protected readonly totalRecebidoMes = computed(() => this.linhas().reduce((s, l) => s + l.valorPago, 0));
   protected readonly totalEmAberto = computed(() => Math.max(0, this.totalDevido() - this.totalRecebidoMes()));
 
-  /**
-   * Saldo acumulado até o mês selecionado. Só entra dinheiro de fato movimentado: pagamentos
-   * recebidos, despesas já marcadas como "pago" (uma despesa lançada mas ainda não paga não
-   * deduz do caixa) e movimentações manuais.
-   */
-  protected readonly saldoAcumulado = computed(() => {
-    const limite = this.month.competencia();
-    const totalPagamentos = this.pagamentosService
-      .all()
-      .filter((p) => p.competencia >= INICIO_CONTROLE_CAIXA && p.competencia <= limite)
-      .reduce((s, p) => s + p.valorPago, 0);
-    const totalDespesas = this.despesasService
-      .all()
-      .filter((d) => d.pago && d.competencia >= INICIO_CONTROLE_CAIXA && d.competencia <= limite)
-      .reduce((s, d) => s + d.valor, 0);
-    const totalMovimentacoes = this.movimentacoesService
-      .all()
-      .filter((m) => m.data.slice(0, 7) <= limite)
-      .reduce((s, m) => s + (m.tipo === 'entrada' ? m.valor : -m.valor), 0);
-    return totalPagamentos - totalDespesas + totalMovimentacoes;
-  });
+  protected readonly saldoAcumulado = computed(() => this.caixaService.saldoAcumulado(this.month.competencia()));
 
   protected readonly movimentacoesOrdenadas = computed(() =>
     [...this.movimentacoesService.all()].sort((a, b) => b.data.localeCompare(a.data)),

@@ -3,10 +3,13 @@ import { RouterLink } from '@angular/router';
 import {
   LucideAlertTriangle,
   LucideCalendarClock,
+  LucideCircleCheck,
+  LucideClock,
   LucidePiggyBank,
   LucideReceiptText,
   LucideWallet,
 } from '@lucide/angular';
+import { CaixaService } from '../../core/services/caixa.service';
 import { CategoriasService } from '../../core/services/categorias.service';
 import { DespesasService } from '../../core/services/despesas.service';
 import { MonthService } from '../../core/services/month.service';
@@ -35,6 +38,8 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
     PageHeader,
     LucideAlertTriangle,
     LucideCalendarClock,
+    LucideCircleCheck,
+    LucideClock,
     LucidePiggyBank,
     LucideReceiptText,
     LucideWallet,
@@ -46,22 +51,37 @@ export class Dashboard {
   private readonly categoriasService = inject(CategoriasService);
   private readonly unidadesService = inject(UnidadesService);
   private readonly pagamentosService = inject(PagamentosService);
+  private readonly caixaService = inject(CaixaService);
   protected readonly rateioService = inject(RateioService);
   protected readonly month = inject(MonthService);
 
   protected readonly rateio = computed(() => this.rateioService.calcular(this.month.competencia()));
 
+  // -- Despesas do mês (contas do condomínio: o que já saiu e o que ainda vai sair) --
+  protected readonly despesasDoMes = computed(() => this.despesasService.porCompetencia(this.month.competencia()));
+  protected readonly totalDespesas = computed(() => this.despesasDoMes().reduce((s, d) => s + d.valor, 0));
+  protected readonly despesasPagas = computed(() =>
+    this.despesasDoMes()
+      .filter((d) => d.pago)
+      .reduce((s, d) => s + d.valor, 0),
+  );
+  protected readonly despesasAPagar = computed(() => this.totalDespesas() - this.despesasPagas());
+
+  // -- Recebimento dos moradores no mês (cobrança: condomínio fixo + água) --
+  protected readonly totalCobrado = computed(() => this.rateio().totalCobrado);
   protected readonly totalRecebido = computed(() =>
     this.pagamentosService
       .porCompetencia(this.month.competencia())
       .reduce((soma, p) => soma + p.valorPago, 0),
   );
+  protected readonly emAbertoMoradores = computed(() => Math.max(0, this.totalCobrado() - this.totalRecebido()));
 
-  protected readonly saldoMes = computed(() => this.totalRecebido() - this.rateio().totalDespesas);
+  // -- Saldo real de caixa (o que importa: sobra ou falta dinheiro) --
+  protected readonly saldoCaixa = computed(() => this.caixaService.saldoAcumulado(this.month.competencia()));
 
   protected readonly categoriasOrdenadas = computed(() => {
-    const despesasMes = this.despesasService.porCompetencia(this.month.competencia());
-    const total = despesasMes.reduce((s, d) => s + d.valor, 0);
+    const despesasMes = this.despesasDoMes();
+    const total = this.totalDespesas();
 
     const totalPorCategoria = new Map<string, number>();
     for (const despesa of despesasMes) {

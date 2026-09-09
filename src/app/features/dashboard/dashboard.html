@@ -15,21 +15,63 @@
   </div>
 }
 
-<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-  <app-kpi-card label="Total gasto no mês" [value]="rateio().totalDespesas | brl" tone="red">
-    <svg lucideReceiptText class="h-5 w-5 text-accent-red"></svg>
-  </app-kpi-card>
-  <app-kpi-card label="Total recebido no mês" [value]="totalRecebido() | brl" tone="primary">
-    <svg lucideWallet class="h-5 w-5 text-primary-600"></svg>
-  </app-kpi-card>
-  <app-kpi-card
-    label="Saldo do mês"
-    [value]="saldoMes() | brl"
-    [tone]="saldoMes() >= 0 ? 'green' : 'red'"
-    hint="Recebido − gasto"
-  >
-    <svg lucidePiggyBank class="h-5 w-5" [class]="saldoMes() >= 0 ? 'text-accent-green' : 'text-accent-red'"></svg>
-  </app-kpi-card>
+<!-- Saldo real de caixa: a resposta pra "temos dinheiro ou não" -->
+<div
+  class="mb-6 flex flex-col items-start justify-between gap-3 rounded-2xl border px-6 py-5 shadow-sm sm:flex-row sm:items-center"
+  [class]="saldoCaixa() >= 0 ? 'border-accent-green/30 bg-accent-green-bg' : 'border-accent-red/30 bg-accent-red-bg'"
+>
+  <div class="flex items-center gap-3">
+    <span
+      class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/70"
+      [class]="saldoCaixa() >= 0 ? 'text-accent-green' : 'text-accent-red'"
+    >
+      <svg lucidePiggyBank class="h-6 w-6"></svg>
+    </span>
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-soft">
+        Saldo de caixa acumulado {{ saldoCaixa() >= 0 ? '(sobrando)' : '(faltando)' }}
+      </p>
+      <p class="text-2xl font-extrabold" [class]="saldoCaixa() >= 0 ? 'text-accent-green' : 'text-accent-red'">
+        {{ saldoCaixa() | brl }}
+      </p>
+    </div>
+  </div>
+  <p class="max-w-sm text-xs text-ink-soft sm:text-right">
+    Histórico completo até {{ month.competencia() | competencia }}: pagamentos recebidos + saldo inicial − despesas já pagas.
+    <a routerLink="/caixa" class="font-semibold text-ink underline">Ver detalhes →</a>
+  </p>
+</div>
+
+<div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="rounded-2xl border border-primary-100 bg-white p-4 shadow-sm">
+    <p class="mb-3 text-xs font-bold uppercase tracking-wide text-ink-soft">Despesas do condomínio no mês</p>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <app-kpi-card label="Total lançado" [value]="totalDespesas() | brl" tone="red">
+        <svg lucideReceiptText class="h-5 w-5 text-accent-red"></svg>
+      </app-kpi-card>
+      <app-kpi-card label="Já pago" [value]="despesasPagas() | brl" tone="green">
+        <svg lucideCircleCheck class="h-5 w-5 text-accent-green"></svg>
+      </app-kpi-card>
+      <app-kpi-card label="A pagar" [value]="despesasAPagar() | brl" tone="amber">
+        <svg lucideClock class="h-5 w-5 text-accent-amber"></svg>
+      </app-kpi-card>
+    </div>
+  </div>
+
+  <div class="rounded-2xl border border-primary-100 bg-white p-4 shadow-sm">
+    <p class="mb-3 text-xs font-bold uppercase tracking-wide text-ink-soft">Recebimento dos moradores no mês</p>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <app-kpi-card label="Total a cobrar" [value]="totalCobrado() | brl" tone="primary">
+        <svg lucideWallet class="h-5 w-5 text-primary-600"></svg>
+      </app-kpi-card>
+      <app-kpi-card label="Recebido" [value]="totalRecebido() | brl" tone="green">
+        <svg lucideCircleCheck class="h-5 w-5 text-accent-green"></svg>
+      </app-kpi-card>
+      <app-kpi-card label="Em aberto" [value]="emAbertoMoradores() | brl" tone="amber">
+        <svg lucideClock class="h-5 w-5 text-accent-amber"></svg>
+      </app-kpi-card>
+    </div>
+  </div>
 </div>
 
 @if (parceladasEmAberto() > 0) {
