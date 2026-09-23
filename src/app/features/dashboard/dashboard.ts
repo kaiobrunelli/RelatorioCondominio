@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
@@ -16,9 +17,9 @@ import { MonthService } from '../../core/services/month.service';
 import { PagamentosService } from '../../core/services/pagamentos.service';
 import { RateioService } from '../../core/services/rateio.service';
 import { UnidadesService } from '../../core/services/unidades.service';
-import { somarMeses } from '../../core/utils/competencia.util';
 import { BrlPipe } from '../../shared/pipes/brl.pipe';
 import { CompetenciaPipe } from '../../shared/pipes/competencia.pipe';
+import { Badge, BadgeTone } from '../../shared/ui/badge/badge';
 import { Card } from '../../shared/ui/card/card';
 import { EmptyState } from '../../shared/ui/empty-state/empty-state';
 import { KpiCard } from '../../shared/ui/kpi-card/kpi-card';
@@ -29,8 +30,10 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
   selector: 'app-dashboard',
   imports: [
     RouterLink,
+    DatePipe,
     BrlPipe,
     CompetenciaPipe,
+    Badge,
     Card,
     EmptyState,
     KpiCard,
@@ -98,18 +101,40 @@ export class Dashboard {
       .sort((a, b) => b.total - a.total);
   });
 
-  protected readonly tendencia = computed(() => {
-    const meses = Array.from({ length: 6 }, (_, i) => somarMeses(this.month.competencia(), i - 5));
-    const valores = meses.map((competencia) =>
-      this.despesasService.porCompetencia(competencia).reduce((s, d) => s + d.valor, 0),
-    );
-    const max = Math.max(1, ...valores);
-    return meses.map((competencia, i) => ({
-      competencia,
-      valor: valores[i],
-      altura: Math.max(4, Math.round((valores[i] / max) * 100)),
-    }));
+  /** Lembrete de contas a pagar: atrasadas + as que vencem nos próximos 30 dias. */
+  protected readonly proximosVencimentos = computed(() => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const umDia = 24 * 60 * 60 * 1000;
+
+    return this.despesasService
+      .proximosVencimentos()
+      .map((despesa) => {
+        const [ano, mes, dia] = despesa.vencimento!.split('-').map(Number);
+        const dias = Math.round((new Date(ano, mes - 1, dia).getTime() - hoje.getTime()) / umDia);
+        return {
+          despesa,
+          conta: this.categoriasService.byId(despesa.categoriaId)?.nome ?? despesa.descricao,
+          cor: this.categoriasService.byId(despesa.categoriaId)?.cor ?? '#8a9bad',
+          dias,
+        };
+      })
+      .filter((item) => item.dias <= 30)
+      .slice(0, 8);
   });
+
+  rotuloPrazo(dias: number): string {
+    if (dias < 0) return `atrasada ${-dias} dia(s)`;
+    if (dias === 0) return 'vence hoje';
+    if (dias === 1) return 'vence amanhã';
+    return `em ${dias} dias`;
+  }
+
+  tonePrazo(dias: number): BadgeTone {
+    if (dias < 0) return 'red';
+    if (dias <= 3) return 'amber';
+    return 'neutral';
+  }
 
   protected readonly semUnidades = computed(() => this.unidadesService.ativas().length === 0);
 

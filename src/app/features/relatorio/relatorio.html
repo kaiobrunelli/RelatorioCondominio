@@ -2,6 +2,7 @@
   <div class="flex items-center gap-2">
     <input
       type="month"
+      [min]="inicioRelatorio"
       [ngModel]="desde()"
       (ngModelChange)="desde.set($event)"
       class="rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm outline-none focus:border-primary-400"
@@ -9,6 +10,7 @@
     <span class="text-sm text-ink-soft">até</span>
     <input
       type="month"
+      [min]="inicioRelatorio"
       [ngModel]="ate()"
       (ngModelChange)="ate.set($event)"
       class="rounded-lg border border-primary-100 bg-white px-3 py-2 text-sm outline-none focus:border-primary-400"

@@ -2,6 +2,7 @@ import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideCircleCheck, LucideCircleDollarSign, LucideScale, LucideWallet } from '@lucide/angular';
+import { INICIO_CONTROLE_CAIXA } from '../../core/constants';
 import { Unidade } from '../../core/models';
 import { DespesasService } from '../../core/services/despesas.service';
 import { PagamentosService } from '../../core/services/pagamentos.service';
@@ -51,15 +52,15 @@ export class RelatorioPage {
   private readonly unidadesService = inject(UnidadesService);
   private readonly rateioService = inject(RateioService);
 
-  private readonly competenciaPadrao = computed<string>(() => {
-    const disponiveis = this.despesasService.competenciasDisponiveis();
-    return disponiveis.length > 0 ? disponiveis[0] : competenciaAtual();
-  });
+  /** O relatório só cobre meses a partir do início do controle no sistema; o histórico anterior fica de fora. */
+  protected readonly inicioRelatorio = INICIO_CONTROLE_CAIXA;
 
   protected desde = signal<string>('');
   protected ate = signal<string>('');
 
-  private readonly desdeEfetivo = computed(() => this.desde() || this.competenciaPadrao());
+  private readonly desdeEfetivo = computed(() =>
+    this.desde() && this.desde() > INICIO_CONTROLE_CAIXA ? this.desde() : INICIO_CONTROLE_CAIXA,
+  );
   private readonly ateEfetivo = computed(() => this.ate() || competenciaAtual());
 
   protected readonly formatarMes = formatarCompetenciaCurta;

@@ -132,6 +132,7 @@ export class DespesasPage {
         (d) =>
           !termo ||
           d.descricao.toLowerCase().includes(termo) ||
+          d.observacoes.toLowerCase().includes(termo) ||
           d.fornecedorNome.toLowerCase().includes(termo),
       )
       .sort((a, b) => (a.competencia === b.competencia ? b.valor - a.valor : b.competencia.localeCompare(a.competencia)));
@@ -186,24 +187,31 @@ export class DespesasPage {
 
   salvarDespesa(): void {
     const dados = this.formulario;
-    if (!dados.categoriaId || !dados.descricao.trim() || !dados.valor || dados.valor <= 0) return;
+    if (!dados.categoriaId || !dados.valor || dados.valor <= 0) return;
+
+    // O nome da conta é a própria categoria; detalhes extras vão em "Observações".
+    const nomeConta = this.nomeCategoria(dados.categoriaId);
 
     const editandoId = this.editandoId();
     if (editandoId) {
+      const original = this.despesasService.byId(editandoId);
+      // Lançamentos antigos podem ter uma descrição própria (ex.: "Insulfilm porta"): só troca
+      // quando a descrição era apenas o nome da categoria anterior.
+      const descricaoEraCategoria = !original || original.descricao === this.nomeCategoria(original.categoriaId);
       this.despesasService.update(editandoId, {
         categoriaId: dados.categoriaId,
-        descricao: dados.descricao.trim(),
+        descricao: descricaoEraCategoria ? nomeConta : dados.descricao,
         valor: dados.valor,
         competencia: dados.competencia,
         fornecedorNome: dados.fornecedorNome.trim(),
         fornecedorContato: dados.fornecedorContato.trim(),
         observacoes: dados.observacoes.trim(),
-        vencimento: dados.vencimento || null,
       });
+      this.despesasService.definirVencimento(editandoId, dados.vencimento || null);
     } else {
       this.despesasService.criar({
         categoriaId: dados.categoriaId,
-        descricao: dados.descricao,
+        descricao: nomeConta,
         valor: dados.valor,
         competencia: dados.competencia,
         tipo: dados.tipo,
@@ -269,6 +277,11 @@ export class DespesasPage {
 
   alternarPago(despesa: Despesa): void {
     this.despesasService.marcarPago(despesa.id, !despesa.pago);
+  }
+
+  /** Descrição própria de lançamentos antigos, exibida só quando difere do nome da categoria. */
+  descricaoExtra(despesa: Despesa): string {
+    return despesa.descricao === this.nomeCategoria(despesa.categoriaId) ? '' : despesa.descricao;
   }
 
   atrasada(despesa: Despesa): boolean {

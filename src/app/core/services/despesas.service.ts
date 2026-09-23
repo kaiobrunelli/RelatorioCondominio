@@ -18,11 +18,22 @@ export interface NovaDespesa {
   vencimento: string | null;
 }
 
-/** Soma meses a uma data completa (AAAA-MM-DD), mantendo o dia. Usado para projetar vencimentos de recorrências/parcelas. */
+/**
+ * Soma meses a uma data completa (AAAA-MM-DD), mantendo o dia do vencimento. Se o mês de
+ * destino for mais curto (ex.: dia 31 em fevereiro), usa o último dia desse mês.
+ */
 function somarMesesData(data: string, quantidade: number): string {
   const [ano, mes, dia] = data.split('-').map(Number);
-  const proxima = new Date(ano, mes - 1 + quantidade, dia);
-  return `${proxima.getFullYear()}-${String(proxima.getMonth() + 1).padStart(2, '0')}-${String(proxima.getDate()).padStart(2, '0')}`;
+  const primeiroDia = new Date(ano, mes - 1 + quantidade, 1);
+  const ultimoDiaDoMes = new Date(primeiroDia.getFullYear(), primeiroDia.getMonth() + 1, 0).getDate();
+  return `${primeiroDia.getFullYear()}-${String(primeiroDia.getMonth() + 1).padStart(2, '0')}-${String(Math.min(dia, ultimoDiaDoMes)).padStart(2, '0')}`;
+}
+
+/** Diferença em meses entre duas competências AAAA-MM (b − a). */
+function mesesEntre(a: string, b: string): number {
+  const [anoA, mesA] = a.split('-').map(Number);
+  const [anoB, mesB] = b.split('-').map(Number);
+  return (anoB - anoA) * 12 + (mesB - mesA);
 }
 
 @Injectable({ providedIn: 'root' })
@@ -87,6 +98,31 @@ export class DespesasService extends EntityStore<Despesa> {
 
     this.addMany(geradas);
     return geradas;
+  }
+
+  /**
+   * Aplica o vencimento a um lançamento e, se ele fizer parte de uma recorrência/parcelamento,
+   * projeta o mesmo dia de vencimento para os meses seguintes da série.
+   */
+  definirVencimento(id: string, vencimento: string | null): void {
+    const despesa = this.byId(id);
+    if (!despesa) return;
+
+    const alvos = despesa.grupoId
+      ? this.all().filter((d) => d.grupoId === despesa.grupoId && d.competencia >= despesa.competencia)
+      : [despesa];
+
+    for (const alvo of alvos) {
+      const novo = vencimento ? somarMesesData(vencimento, mesesEntre(despesa.competencia, alvo.competencia)) : null;
+      if (alvo.vencimento !== novo) this.update(alvo.id, { vencimento: novo });
+    }
+  }
+
+  /** Contas ainda não pagas com vencimento definido, da mais urgente para a mais distante. */
+  proximosVencimentos(): Despesa[] {
+    return this.all()
+      .filter((d) => !d.pago && !!d.vencimento)
+      .sort((a, b) => a.vencimento!.localeCompare(b.vencimento!));
   }
 
   removerGrupo(grupoId: string): void {
