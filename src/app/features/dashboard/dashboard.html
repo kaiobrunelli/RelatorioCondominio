@@ -1,4 +1,13 @@
 <app-page-header title="Dashboard" subtitle="Visão geral financeira do condomínio">
+  <button
+    type="button"
+    (click)="baixarRelatorio()"
+    title="Baixa um arquivo de texto com saldo, contas pagas/em aberto e recebimentos dos últimos 3 meses"
+    class="flex items-center gap-2 rounded-xl border border-primary-100 bg-white px-4 py-2 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50"
+  >
+    <svg lucideDownload class="h-4 w-4"></svg>
+    Baixar relatório (3 meses)
+  </button>
   <app-month-switcher></app-month-switcher>
 </app-page-header>
 

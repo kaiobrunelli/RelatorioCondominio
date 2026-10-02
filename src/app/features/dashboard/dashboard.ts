@@ -6,6 +6,7 @@ import {
   LucideCalendarClock,
   LucideCircleCheck,
   LucideClock,
+  LucideDownload,
   LucidePiggyBank,
   LucideReceiptText,
   LucideWallet,
@@ -16,6 +17,7 @@ import { DespesasService } from '../../core/services/despesas.service';
 import { MonthService } from '../../core/services/month.service';
 import { PagamentosService } from '../../core/services/pagamentos.service';
 import { RateioService } from '../../core/services/rateio.service';
+import { RelatorioBackupService } from '../../core/services/relatorio-backup.service';
 import { UnidadesService } from '../../core/services/unidades.service';
 import { BrlPipe } from '../../shared/pipes/brl.pipe';
 import { CompetenciaPipe } from '../../shared/pipes/competencia.pipe';
@@ -43,6 +45,7 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
     LucideCalendarClock,
     LucideCircleCheck,
     LucideClock,
+    LucideDownload,
     LucidePiggyBank,
     LucideReceiptText,
     LucideWallet,
@@ -55,6 +58,7 @@ export class Dashboard {
   private readonly unidadesService = inject(UnidadesService);
   private readonly pagamentosService = inject(PagamentosService);
   private readonly caixaService = inject(CaixaService);
+  private readonly relatorioBackup = inject(RelatorioBackupService);
   protected readonly rateioService = inject(RateioService);
   protected readonly month = inject(MonthService);
 
@@ -122,6 +126,11 @@ export class Dashboard {
       .filter((item) => item.dias <= 30)
       .slice(0, 8);
   });
+
+  /** Backup em texto dos 3 meses que terminam no mês selecionado. */
+  baixarRelatorio(): void {
+    this.relatorioBackup.baixar(this.month.competencia());
+  }
 
   rotuloPrazo(dias: number): string {
     if (dias < 0) return `atrasada ${-dias} dia(s)`;
