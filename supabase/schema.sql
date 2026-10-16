@@ -70,6 +70,8 @@ create table public.pagamentos (
   unidade_id uuid not null references public.unidades (id) on delete cascade,
   competencia text not null, -- formato AAAA-MM
   valor_pago numeric(12, 2) not null default 0,
+  pago_condominio boolean not null default false,
+  pago_agua boolean not null default false,
   data_pagamento date,
   forma_pagamento text not null default '',
   observacoes text not null default '',

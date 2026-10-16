@@ -6,6 +6,8 @@ export interface NovoPagamento {
   unidadeId: string;
   competencia: string;
   valorPago: number;
+  pagoCondominio?: boolean;
+  pagoAgua?: boolean;
   dataPagamento: string | null;
   formaPagamento: string;
   observacoes: string;
@@ -28,13 +30,16 @@ export class PagamentosService extends EntityStore<Pagamento> {
   registrar(dados: NovoPagamento): Pagamento {
     const existente = this.porUnidadeECompetencia(dados.unidadeId, dados.competencia);
     if (existente) {
-      this.update(existente.id, {
+      const patch: Partial<Pagamento> = {
         valorPago: dados.valorPago,
         dataPagamento: dados.dataPagamento,
         formaPagamento: dados.formaPagamento.trim(),
         observacoes: dados.observacoes.trim(),
-      });
-      return { ...existente, ...dados };
+      };
+      if (dados.pagoCondominio !== undefined) patch.pagoCondominio = dados.pagoCondominio;
+      if (dados.pagoAgua !== undefined) patch.pagoAgua = dados.pagoAgua;
+      this.update(existente.id, patch);
+      return { ...existente, ...patch };
     }
 
     const pagamento: Pagamento = {
@@ -42,6 +47,8 @@ export class PagamentosService extends EntityStore<Pagamento> {
       unidadeId: dados.unidadeId,
       competencia: dados.competencia,
       valorPago: dados.valorPago,
+      pagoCondominio: dados.pagoCondominio ?? false,
+      pagoAgua: dados.pagoAgua ?? false,
       dataPagamento: dados.dataPagamento,
       formaPagamento: dados.formaPagamento.trim(),
       observacoes: dados.observacoes.trim(),

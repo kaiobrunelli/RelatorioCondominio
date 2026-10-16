@@ -6,6 +6,8 @@ export interface Pagamento {
   /** Mês de competência no formato AAAA-MM. */
   competencia: string;
   valorPago: number;
+  pagoCondominio: boolean;
+  pagoAgua: boolean;
   dataPagamento: string | null;
   formaPagamento: string;
   observacoes: string;

@@ -23,12 +23,19 @@ import { PageHeader } from '../../shared/ui/page-header/page-header';
 
 type StatusLinha = 'pago' | 'parcial' | 'pendente';
 
+type ParcelaCobranca = 'condominio' | 'agua';
+
 interface LinhaPagamento {
   unidade: Unidade;
+  valorCondominio: number;
+  valorAgua: number;
   valorDevido: number;
   valorPago: number;
+  pagoCondominio: boolean;
+  pagoAgua: boolean;
   dataPagamento: string | null;
   formaPagamento: string;
+  observacoes: string;
   status: StatusLinha;
 }
 
@@ -49,6 +56,10 @@ interface FormularioMovimentacao {
 
 function hojeIso(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function arredondar(valor: number): number {
+  return Math.round(valor * 100) / 100;
 }
 
 @Component({
@@ -116,6 +127,8 @@ export class CaixaPage {
   protected readonly modalAguaAberto = signal(false);
   protected valorAgua: number | null = null;
 
+  protected readonly temAgua = computed(() => this.rateio().totalAgua > 0);
+
   protected readonly linhas = computed<LinhaPagamento[]>(() => {
     const pagamentos = this.pagamentosService.porCompetencia(this.month.competencia());
     return [...this.rateio().unidades]
@@ -128,10 +141,15 @@ export class CaixaPage {
         else if (valorPago > 0) status = 'parcial';
         return {
           unidade: linha.unidade,
+          valorCondominio: linha.valorCondominio,
+          valorAgua: linha.valorAgua,
           valorDevido: linha.total,
           valorPago,
+          pagoCondominio: pagamento?.pagoCondominio ?? false,
+          pagoAgua: pagamento?.pagoAgua ?? false,
           dataPagamento: pagamento?.dataPagamento ?? null,
           formaPagamento: pagamento?.formaPagamento ?? '',
+          observacoes: pagamento?.observacoes ?? '',
           status,
         };
       });
@@ -153,7 +171,7 @@ export class CaixaPage {
       valorPago: linha.valorPago > 0 ? linha.valorPago : linha.valorDevido,
       dataPagamento: linha.dataPagamento ?? hojeIso(),
       formaPagamento: linha.formaPagamento || 'Pix',
-      observacoes: '',
+      observacoes: linha.observacoes,
     };
     this.modalPagamentoAberto.set(true);
   }
@@ -166,16 +184,36 @@ export class CaixaPage {
     const dados = this.formularioPagamento;
     if (!dados.unidadeId || dados.valorPago === null || dados.valorPago < 0) return;
 
+    const linha = this.linhas().find((l) => l.unidade.id === dados.unidadeId);
     const registro: NovoPagamento = {
       unidadeId: dados.unidadeId,
       competencia: this.month.competencia(),
       valorPago: dados.valorPago,
+      pagoCondominio: !!linha && dados.valorPago >= linha.valorCondominio - 0.01,
+      pagoAgua: !!linha && linha.valorAgua > 0 && dados.valorPago >= linha.valorDevido - 0.01,
       dataPagamento: dados.dataPagamento || null,
       formaPagamento: dados.formaPagamento,
       observacoes: dados.observacoes,
     };
     this.pagamentosService.registrar(registro);
     this.modalPagamentoAberto.set(false);
+  }
+
+  alternarParcela(linha: LinhaPagamento, parcela: ParcelaCobranca): void {
+    const pagoCondominio = parcela === 'condominio' ? !linha.pagoCondominio : linha.pagoCondominio;
+    const pagoAgua = parcela === 'agua' ? !linha.pagoAgua : linha.pagoAgua;
+    const valorPago = arredondar((pagoCondominio ? linha.valorCondominio : 0) + (pagoAgua ? linha.valorAgua : 0));
+
+    this.pagamentosService.registrar({
+      unidadeId: linha.unidade.id,
+      competencia: this.month.competencia(),
+      valorPago,
+      pagoCondominio,
+      pagoAgua,
+      dataPagamento: valorPago > 0 ? (linha.dataPagamento ?? hojeIso()) : null,
+      formaPagamento: linha.formaPagamento || 'Pix',
+      observacoes: linha.observacoes,
+    });
   }
 
   abrirMovimentacao(): void {
