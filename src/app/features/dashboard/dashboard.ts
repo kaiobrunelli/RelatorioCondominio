@@ -91,6 +91,7 @@ export class Dashboard {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const umDia = 24 * 60 * 60 * 1000;
+    const competenciaAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
 
     const todas = this.despesasService.all();
     const diaPorGrupo = new Map<string, number>();
@@ -132,7 +133,10 @@ export class Dashboard {
         };
       })
       .filter((item) => item !== null)
-      .filter((item) => item.dias <= 30 && (!item.previsto || item.dias >= 0))
+      .filter(
+        (item) =>
+          (item.dias <= 30 || item.despesa.competencia <= competenciaAtual) && (!item.previsto || item.dias >= 0),
+      )
       .sort((a, b) => a.data.getTime() - b.data.getTime());
   });
 
