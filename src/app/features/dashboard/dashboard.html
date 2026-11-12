@@ -94,32 +94,8 @@
   </div>
 }
 
-<div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-  <app-card title="Despesas por categoria" [subtitle]="rateio().competencia | competencia" class="lg:col-span-3">
-    @if (categoriasOrdenadas().length === 0) {
-      <app-empty-state title="Sem despesas neste mês" description="Cadastre uma despesa para começar a ver o resumo por categoria.">
-        <span icon>
-          <svg lucideReceiptText class="h-5 w-5"></svg>
-        </span>
-      </app-empty-state>
-    } @else {
-      <div class="space-y-3">
-        @for (categoria of categoriasOrdenadas(); track categoria.categoriaId) {
-          <div>
-            <div class="mb-1 flex items-center justify-between text-sm">
-              <span class="font-medium text-ink">{{ categoria.categoriaNome }}</span>
-              <span class="font-semibold text-ink">{{ categoria.total | brl }}</span>
-            </div>
-            <div class="h-2 w-full overflow-hidden rounded-full bg-surface-alt">
-              <div class="h-full rounded-full bg-primary-500" [style.width.%]="categoria.percentual"></div>
-            </div>
-          </div>
-        }
-      </div>
-    }
-  </app-card>
-
-  <app-card title="Próximos vencimentos" subtitle="Contas a pagar · próximos 30 dias" class="lg:col-span-2">
+<div class="grid grid-cols-1 gap-4">
+  <app-card title="Próximos vencimentos" subtitle="Contas a pagar · próximos 30 dias">
     @if (proximosVencimentos().length === 0) {
       <app-empty-state
         title="Nenhuma conta a vencer"
@@ -139,7 +115,7 @@
                 {{ item.conta }}
               </p>
               <p class="pl-[18px] text-xs text-ink-soft">
-                Dia {{ item.despesa.vencimento | date: 'dd/MM' }} · {{ item.despesa.valor | brl }}
+                Dia {{ item.data | date: 'dd/MM' }}{{ item.previsto ? ' (previsto)' : '' }} · {{ item.despesa.valor | brl }}
               </p>
             </div>
             <app-badge [tone]="tonePrazo(item.dias)">{{ rotuloPrazo(item.dias) }}</app-badge>

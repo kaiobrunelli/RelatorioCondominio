@@ -86,45 +86,54 @@ export class Dashboard {
   // -- Saldo real de caixa (o que importa: sobra ou falta dinheiro) --
   protected readonly saldoCaixa = computed(() => this.caixaService.saldoAcumulado(this.month.competencia()));
 
-  protected readonly categoriasOrdenadas = computed(() => {
-    const despesasMes = this.despesasDoMes();
-    const total = this.totalDespesas();
-
-    const totalPorCategoria = new Map<string, number>();
-    for (const despesa of despesasMes) {
-      totalPorCategoria.set(despesa.categoriaId, (totalPorCategoria.get(despesa.categoriaId) ?? 0) + despesa.valor);
-    }
-
-    return [...totalPorCategoria.entries()]
-      .map(([categoriaId, valor]) => ({
-        categoriaId,
-        categoriaNome: this.categoriasService.byId(categoriaId)?.nome ?? 'Sem categoria',
-        total: valor,
-        percentual: total > 0 ? (valor / total) * 100 : 0,
-      }))
-      .sort((a, b) => b.total - a.total);
-  });
-
   /** Lembrete de contas a pagar: atrasadas + as que vencem nos próximos 30 dias. */
   protected readonly proximosVencimentos = computed(() => {
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
     const umDia = 24 * 60 * 60 * 1000;
 
-    return this.despesasService
-      .proximosVencimentos()
+    const todas = this.despesasService.all();
+    const diaPorGrupo = new Map<string, number>();
+    const diaPorCategoria = new Map<string, { competencia: string; dia: number }>();
+    for (const d of todas) {
+      if (!d.vencimento) continue;
+      const dia = Number(d.vencimento.slice(8, 10));
+      if (d.grupoId) diaPorGrupo.set(d.grupoId, dia);
+      const atual = diaPorCategoria.get(d.categoriaId);
+      if (!atual || d.competencia > atual.competencia) diaPorCategoria.set(d.categoriaId, { competencia: d.competencia, dia });
+    }
+
+    return todas
+      .filter((d) => !d.pago)
       .map((despesa) => {
-        const [ano, mes, dia] = despesa.vencimento!.split('-').map(Number);
-        const dias = Math.round((new Date(ano, mes - 1, dia).getTime() - hoje.getTime()) / umDia);
+        let data: Date | null = null;
+        let previsto = false;
+        if (despesa.vencimento) {
+          const [ano, mes, dia] = despesa.vencimento.slice(0, 10).split('-').map(Number);
+          data = new Date(ano, mes - 1, dia);
+        } else {
+          const dia =
+            (despesa.grupoId ? diaPorGrupo.get(despesa.grupoId) : undefined) ?? diaPorCategoria.get(despesa.categoriaId)?.dia;
+          if (dia) {
+            const [ano, mes] = despesa.competencia.split('-').map(Number);
+            const ultimoDia = new Date(ano, mes, 0).getDate();
+            data = new Date(ano, mes - 1, Math.min(dia, ultimoDia));
+            previsto = true;
+          }
+        }
+        if (!data) return null;
         return {
           despesa,
+          data,
+          previsto,
           conta: this.categoriasService.byId(despesa.categoriaId)?.nome ?? despesa.descricao,
           cor: this.categoriasService.byId(despesa.categoriaId)?.cor ?? '#8a9bad',
-          dias,
+          dias: Math.round((data.getTime() - hoje.getTime()) / umDia),
         };
       })
-      .filter((item) => item.dias <= 30)
-      .slice(0, 8);
+      .filter((item) => item !== null)
+      .filter((item) => item.dias <= 30 && (!item.previsto || item.dias >= 0))
+      .sort((a, b) => a.data.getTime() - b.data.getTime());
   });
 
   /** Backup em texto dos 3 meses que terminam no mês selecionado. */
